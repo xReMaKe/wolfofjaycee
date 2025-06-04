@@ -1,0 +1,527 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+/* Basic Reset & Font Variables */
+
+:root {
+    --bg-primary: #fdf6ef;
+
+    --bg-panel: #fffaf3;
+
+    --text-primary: #2e2e2e;
+
+    --text-secondary: #6c6b68;
+
+    --accent-color: #2d402c; /* Deep muted green */
+
+    --interest-color: #2d402c; /* Same muted green for interest line */
+
+    --contribution-color: #d7c9a5; /* Light beige for contributions */
+
+    --border-color: #e8e1d9;
+
+    --shadow-color: rgba(0, 0, 0, 0.05);
+}
+
+* {
+    box-sizing: border-box;
+
+    margin: 0;
+
+    padding: 0;
+}
+
+body {
+    /* MODIFIED: Font changed to Inter, padding-top added */
+
+    font-family: "Inter", sans-serif;
+
+    background-color: var(--bg-primary);
+
+    color: var(--text-primary);
+
+    line-height: 1.6;
+
+    padding: 20px; /* Sets right, bottom, left padding */
+
+    padding-top: 80px; /* Overrides top padding for header space */
+}
+
+/* ================== CALCULATOR STYLES (Original) ================== */
+
+.calculator-container {
+    max-width: 1200px;
+
+    margin: 30px auto;
+
+    background-color: var(--bg-panel);
+
+    border-radius: 12px;
+
+    box-shadow: 0 4px 15px var(--shadow-color);
+
+    overflow: hidden; /* Contain shadows/borders */
+}
+
+/* General H1 - Used by Calculator and potentially other titles */
+
+h1 {
+    text-align: center;
+
+    padding: 25px 20px;
+
+    background-color: var(--accent-color);
+
+    color: white;
+
+    font-weight: 500;
+
+    font-size: 1.8em;
+
+    margin-bottom: 0;
+}
+
+/* General H2 - Used by Calculator panels */
+
+h2 {
+    font-weight: 600;
+
+    margin-bottom: 20px;
+
+    color: var(--text-primary);
+
+    border-bottom: 1px solid var(--border-color);
+
+    padding-bottom: 10px;
+}
+
+/* ================== MAIN CONTENT H1 STYLING ================== */
+
+/* Override the default H1 style for main page titles */
+main h1 {
+    background-color: transparent; /* Remove the green background */
+    color: var(--text-primary); /* Use the standard dark text color */
+    font-size: 1.6em; /* Slightly smaller than header H1? Adjust as needed */
+    text-align: center; /* Keep it centered, or change to left if preferred */
+    padding: 20px 10px 15px 10px; /* Adjust top/bottom padding */
+    margin-bottom: 20px; /* Add space below the heading */
+    border-bottom: 1px solid var(--border-color); /* Optional: Add a subtle line below */
+}
+
+/* You might want to ensure your general h1 rule doesn't interfere */
+/* Or make the general h1 rule more specific if it was only for the calculator title */
+/* For example: .calculator-container h1 { ... } */
+
+/* ================== END MAIN CONTENT H1 STYLING ================== */
+
+.main-content {
+    display: flex;
+
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+}
+
+/* Input Panel Styling */
+
+.input-panel {
+    flex: 1; /* Take up available space */
+
+    min-width: 300px; /* Minimum width before wrapping */
+
+    padding: 25px 30px;
+
+    background-color: var(--bg-panel); /* Or slightly different if desired */
+
+    border-right: 1px solid var(--border-color); /* Separator line */
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+
+    font-weight: 500;
+
+    margin-bottom: 8px;
+
+    font-size: 0.95em;
+
+    color: var(--text-secondary);
+}
+
+.input-group input[type="number"],
+.input-group select {
+    width: 100%;
+
+    padding: 12px 15px;
+
+    border: 1px solid var(--border-color);
+
+    border-radius: 6px;
+
+    font-size: 1em;
+
+    background-color: #fff;
+
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-group input[type="number"]:focus,
+.input-group select:focus {
+    outline: none;
+
+    border-color: var(--accent-color);
+
+    /* Consider updating focus ring color if needed */
+
+    box-shadow: 0 0 0 3px rgba(45, 64, 44, 0.2); /* Adjusted focus ring to match accent */
+}
+
+/* Output Panel Styling */
+
+.output-panel {
+    flex: 1.5; /* Take up more space */
+
+    min-width: 400px;
+
+    padding: 25px 30px;
+}
+
+.results-summary {
+    margin-bottom: 30px;
+
+    padding: 15px;
+
+    background-color: #f9f6f1; /* Slightly different background for results */
+
+    border-radius: 8px;
+}
+
+.result-item {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 12px;
+
+    padding-bottom: 12px;
+
+    border-bottom: 1px dashed var(--border-color);
+}
+
+.result-item:last-child {
+    margin-bottom: 0;
+
+    border-bottom: none;
+
+    padding-bottom: 0;
+}
+
+.result-item .label {
+    font-size: 1em;
+
+    color: var(--text-secondary);
+}
+
+.result-item .value {
+    font-size: 1.3em;
+
+    font-weight: 600;
+
+    color: var(--text-primary);
+}
+
+.result-item.interest .value {
+    color: #2d6a4f; /* Use variable */
+
+    font-weight: 700;
+}
+
+/* Chart Styling */
+
+.chart-container {
+    position: relative;
+
+    width: 100%;
+
+    height: 350px; /* Adjust as needed */
+}
+
+/* ================== HEADER STYLES (Moved to Correct Location) ================== */
+
+.site-header {
+    background-color: var(--accent-color); /* Uses variable from :root */
+
+    padding: 0 20px;
+
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+
+    /* Making header fixed requires adjusting body padding */
+
+    /* position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; */
+}
+
+.main-nav {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    max-width: 1200px; /* Adjust if needed */
+
+    margin: 0 auto;
+
+    height: 60px;
+}
+
+.nav-brand a {
+    color: #ffffff;
+
+    text-decoration: none;
+
+    font-size: 1.4em;
+
+    font-weight: 700;
+}
+
+/* ================== LOGO STYLING (Add this now) ================== */
+
+.nav-brand a img {
+    height: 30px; /* START with a smaller value like 30px or 35px */
+
+    width: auto; /* Maintain aspect ratio */
+
+    vertical-align: middle; /* Helps align image nicely */
+}
+
+/* Optional: Adjust nav-brand link if needed for alignment */
+
+.nav-brand a {
+    /* Keep existing styles if you added them */
+
+    display: inline-block;
+
+    line-height: 1; /* Helps prevent extra space */
+}
+
+/* ================== END LOGO STYLING ================== */
+
+.nav-links {
+    list-style: none;
+
+    margin: 0;
+
+    padding: 0;
+
+    display: flex;
+}
+
+.nav-links li {
+    margin-left: 25px;
+}
+
+.nav-links a {
+    color: #f8f9fa;
+
+    text-decoration: none;
+
+    font-size: 1em;
+
+    font-weight: 500;
+
+    padding: 5px 0;
+
+    position: relative;
+
+    transition: color 0.2s ease;
+}
+
+/* Hover Effect */
+
+.nav-links a::after {
+    content: "";
+
+    position: absolute;
+
+    width: 100%;
+
+    transform: scaleX(0);
+
+    height: 2px;
+
+    bottom: 0;
+
+    left: 0;
+
+    background-color: #ffffff;
+
+    transform-origin: bottom right;
+
+    transition: transform 0.25s ease-out;
+}
+
+.nav-links a:hover {
+    color: #ffffff;
+}
+
+.nav-links a:hover::after {
+    transform: scaleX(1);
+
+    transform-origin: bottom left;
+}
+
+/* Basic Mobile Considerations for Header */
+
+@media (max-width: 768px) {
+    .nav-links {
+        display: none; /* Hides links - requires JS for hamburger menu */
+    }
+
+    /* Add .nav-toggle button styles here later if needed */
+
+    .main-nav {
+        /* Adjust flex layout if needed when links are hidden */
+    }
+}
+
+/* ================== START: DROPDOWN MENU STYLES TO ADD ================== */
+
+/* Style the list item that contains the dropdown */
+
+.nav-links li.dropdown {
+    position: relative; /* Required for absolute positioning of the dropdown */
+}
+
+/* Style the dropdown menu itself */
+
+.dropdown-menu {
+    display: none; /* Hide dropdown by default */
+
+    position: absolute;
+
+    top: 100%; /* Position it right below the parent li */
+
+    left: 0;
+
+    background-color: var(--accent-color); /* Same background as header */
+
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Add a shadow */
+
+    border-radius: 0 0 4px 4px; /* Optional: round bottom corners */
+
+    padding: 10px 0; /* Padding top/bottom */
+
+    list-style: none;
+
+    margin: 0; /* Reset margin */
+
+    min-width: 200px; /* Give it a minimum width */
+
+    z-index: 100; /* Ensure it appears above other content */
+}
+
+/* Style the links within the dropdown */
+
+.dropdown-menu li {
+    margin-left: 0; /* Reset margin from main nav */
+
+    width: 100%;
+}
+
+.dropdown-menu li a {
+    color: #f8f9fa; /* Same link color */
+
+    padding: 8px 20px; /* Padding for each dropdown item */
+
+    display: block; /* Make links take full width */
+
+    white-space: nowrap; /* Prevent text wrapping */
+
+    font-size: 0.95em; /* Slightly smaller font */
+
+    font-weight: 400; /* Regular weight */
+
+    transition: background-color 0.2s ease;
+}
+
+/* Remove the underline effect from main nav for dropdown links */
+
+.dropdown-menu li a::after {
+    display: none;
+}
+
+/* Hover effect for dropdown items */
+
+.dropdown-menu li a:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* Subtle hover background */
+
+    color: #ffffff;
+}
+
+/* Show the dropdown menu when hovering over the parent li */
+
+.nav-links li.dropdown:hover > .dropdown-menu {
+    display: block;
+}
+
+/* ================== END: DROPDOWN MENU STYLES TO ADD ================== */
+
+/* ================== RESPONSIVE STYLES (Original - For Calculator/Layout) ================== */
+
+@media (max-width: 900px) {
+    /* Styles for calculator layout */
+
+    .main-content {
+        flex-direction: column;
+    }
+
+    .input-panel {
+        border-right: none;
+
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .output-panel {
+        border-top: none;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Styles already present - DO NOT add header styles here again */
+
+    body {
+        /* Base padding already adjusted at the top */
+
+        padding-left: 10px;
+
+        padding-right: 10px;
+
+        padding-bottom: 10px;
+    }
+
+    h1 {
+        font-size: 1.5em; /* Adjust H1 size on mobile */
+    }
+
+    /* Adjust padding for calculator panels on small mobile */
+
+    .input-panel,
+    .output-panel {
+        padding: 20px 15px;
+    }
+
+    .result-item .value {
+        font-size: 1.1em;
+    }
+
+    .chart-container {
+        height: 300px;
+    }
+
+    .nav-brand a {
+        font-size: 1.2em; /* Slightly smaller brand text on mobile */
+    }
+}

@@ -1,0 +1,13 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Allow read and write access for all paths during local development.
+    // WARNING: THIS IS INSECURE FOR PRODUCTION.
+    // We will refine these rules later, especially when adding user authentication.
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

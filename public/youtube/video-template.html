@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Video | Aprende con WolfOfJayCee!</title>
+        <link rel="stylesheet" href="/calculator/style.css" />
+        <style>
+            /* --- Import Google Font --- */
+            @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+            /* --- Base Variables (Keep your custom colors) --- */
+            :root {
+                --bg-primary: #fdf6ef;
+                --bg-panel: #fffaf3;
+                --text-primary: #2e2e2e;
+                --text-secondary: #6c6b68;
+                --accent-color: #2d402c; /* Deep muted green */
+                --interest-color: #2d402c; /* Same muted green for interest line */
+                --contribution-color: #d7c9a5; /* Light beige for contributions */
+                --border-color: #e8e1d9;
+                --shadow-color: rgba(0, 0, 0, 0.05);
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                /* --- Font Change --- */
+                font-family: "Inter", sans-serif; /* CHANGED from Georgia */
+                background-color: var(--bg-primary);
+                color: var(--text-primary);
+                line-height: 1.6; /* Keep good line spacing */
+                padding: 20px;
+            }
+
+            /* --- Main Container (No changes needed here) --- */
+            .video-page-container {
+                max-width: 960px;
+                margin: 30px auto;
+                padding: 0;
+                background-color: var(--bg-panel);
+                border-radius: 12px;
+                box-shadow: 0 4px 15px var(--shadow-color);
+                overflow: hidden;
+            }
+
+            /* --- Header --- */
+            .video-page-container h1 {
+                margin-bottom: 0;
+                border-top-left-radius: 12px;
+                border-top-right-radius: 12px;
+                /* Inherits font from body, already large */
+            }
+
+            .header-section {
+                padding: 0;
+            }
+
+            .header-section .subtitle {
+                text-align: center;
+                padding: 15px 25px;
+                color: var(--text-secondary);
+                /* --- Subtitle Emphasis --- */
+                font-size: 1.1em; /* ADDED: Slightly larger */
+                font-weight: 500; /* ADDED: Medium weight for Inter font */
+            }
+
+            /* --- Video Embed (Fixed - No further changes needed here) --- */
+            .video-section {
+                position: relative;
+                padding-top: 56.25%; /* 16:9 Aspect Ratio (9 / 16 * 100) */
+                height: 0;
+                overflow: hidden;
+                background-color: #000; /* Black background while loading */
+                /* padding: 0; */ /* Make sure this is still removed or commented out */
+            }
+
+            .video-section iframe {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                border: none;
+            }
+
+            /* --- Content Sections --- */
+            .summary-section,
+            .related-section {
+                margin-bottom: 30px; /* Existing spacing below sections */
+                padding: 0 25px; /* Existing side padding */
+            }
+
+            /* --- Summary Heading & Related Heading --- */
+            .summary-section h2,
+            .related-section h3 {
+                border-bottom: 1px solid var(--border-color);
+                padding-bottom: 10px;
+                margin-bottom: 15px;
+                text-align: center; /* Keep centered */
+                /* --- Space Above Headings --- */
+                margin-top: 20px; /* ADDED: More space above these headings */
+            }
+
+            /* --- Summary Paragraph --- */
+            .summary-section p {
+                /* --- Increase paragraph size --- */
+                font-size: 1.05em; /* ADDED: Slightly larger text (adjust value if needed) */
+                /* text-align: left; (default, no need to specify) */
+                color: var(--text-primary); /* Ensure good contrast */
+            }
+
+            /* --- Related Videos List (Styling kept minimal) --- */
+            .related-section ul {
+                list-style: none;
+                padding: 0;
+            }
+            .related-section li {
+                margin-bottom: 10px;
+            }
+            .related-section a {
+                color: var(--accent-color);
+                text-decoration: none;
+            }
+            .related-section a:hover {
+                text-decoration: underline;
+            }
+
+            /* --- Footer (No changes needed here) --- */
+            .footer-section {
+                text-align: center;
+                padding: 20px;
+                margin-top: 30px;
+                border-top: 1px solid var(--border-color);
+                font-size: 0.9em;
+                color: var(--text-secondary);
+            }
+
+            /* --- Error Message (No changes needed here) --- */
+            #errorMessage {
+                color: #dc3545;
+                text-align: center;
+                padding: 20px;
+                font-weight: bold;
+                display: none;
+            }
+
+            /* --- Responsive (No changes needed here) --- */
+            @media (max-width: 600px) {
+                .video-page-container {
+                    margin: 15px auto;
+                    padding: 0;
+                }
+                .header-section,
+                .video-section,
+                .summary-section,
+                .related-section,
+                .footer-section {
+                    padding: 0 15px;
+                }
+                .video-page-container h1 {
+                    font-size: 1.5em;
+                }
+                /* Adjust paragraph size slightly for mobile maybe? */
+                .summary-section p {
+                    font-size: 1em; /* Reset to base on mobile or adjust */
+                }
+                .header-section .subtitle {
+                    font-size: 1em; /* Adjust subtitle on mobile */
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <!-- pull in the shared header -->
+        <div id="site-header"></div>
+        <script>
+            fetch("../header.html")
+                .then((r) => r.text())
+                .then((html) => {
+                    document.getElementById("site-header").innerHTML = html;
+                })
+                .catch(console.error);
+        </script>
+
+        <!-- now your existing page content -->
+        <div class="video-page-container">
+            <header class="header-section">
+                <h1 id="videoTitle">Cargando video...</h1>
+                <p class="subtitle" id="videoSubtitle"></p>
+            </header>
+
+            <section class="video-section">
+                <iframe
+                    id="videoFrame"
+                    title="Video Player"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen
+                ></iframe>
+            </section>
+
+            <section class="summary-section">
+                <h2 id="summaryTitle">¿De qué trata este video?</h2>
+
+                <p id="videoDescription">Cargando descripción...</p>
+            </section>
+
+            <div id="errorMessage"></div>
+
+            <footer class="footer-section">
+                <p>© 2025 WolfOfJayCee | Canal de Finanzas</p>
+            </footer>
+        </div>
+
+        <script src="videos.js"></script>
+        <script src="video-loader.js"></script>
+    </body>
+</html>

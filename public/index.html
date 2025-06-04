@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>WolfOfJayCee Finanzas</title>
+        <link rel="stylesheet" href="calculator/style.css" />
+    </head>
+    <body>
+        <!-- shared header -->
+        <div id="site-header"></div>
+        <script>
+            fetch("header.html")
+                .then((r) => r.text())
+                .then(
+                    (html) =>
+                        (document.getElementById("site-header").innerHTML =
+                            html)
+                )
+                .catch(console.error);
+        </script>
+
+        <main>
+            <h1>Bienvenido a WolfOfJayCee Finanzas</h1>
+            <p>Elige una herramienta:</p>
+            <ul>
+                <li>
+                    <a href="calculator/calc.html"
+                        >Calculadora de Interés Compuesto</a
+                    >
+                </li>
+                <li>
+                    <a
+                        href="youtube/video-template.html?id=como-hacerte-rico-invirtiendo"
+                        >Ver Guías en Video</a
+                    >
+                </li>
+            </ul>
+        </main>
+    </body>
+</html>
