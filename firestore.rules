@@ -1,13 +1,36 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow read and write access for all paths during local development.
-    // WARNING: THIS IS INSECURE FOR PRODUCTION.
-    // We will refine these rules later, especially when adding user authentication.
-    match /{document=**} {
-      allow read, write: if true;
+    // Rules for 'portfolios' collection:
+    // A user can only create a portfolio if they are authenticated.
+    // A user can only read, update, or delete their OWN portfolios.
+    match /portfolios/{portfolioId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // Rules for 'positions' collection:
+    // A user can only create a position if they are authenticated.
+    // A user can only read, update, or delete their OWN positions.
+    // This assumes 'positions' documents will also have a 'userId' field matching the portfolio's user.
+    match /positions/{positionId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // Rules for 'latest_prices' collection:
+    // Anyone (authenticated or not) can read the latest prices,
+    // but only your Cloud Function (which runs as a trusted service account) can write to it.
+    match /latest_prices/{symbol} {
+      allow read: if true; // Publicly readable
+      allow write: if false; // Deny all direct client writes
+    }
+
+    // Rules for 'test_writes' collection (optional - you can delete this collection from console too)
+    // If you still have test_writes, deny client access. Only functions should touch this.
+    match /test_writes/{documentId} {
+      allow read, write: if false; // Deny all client reads/writes
     }
   }
 }
