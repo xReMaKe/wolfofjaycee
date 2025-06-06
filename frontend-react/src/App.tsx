@@ -12,6 +12,9 @@ import { auth, db } from "./firebase";
 import AuthForms from "./components/AuthForms";
 import DashboardPage from "./pages/DashboardPage"; // IMPORT DASHBOARD
 import CalculatorPage from "./pages/CalculatorPage"; // IMPORT CALCULATOR
+import PortfoliosPage from "./pages/PortfoliosPage";
+import PortfolioDetail from "./components/PortfolioDetail";
+import { useParams, useNavigate } from "react-router-dom";
 
 import styles from "./App.module.css";
 
@@ -81,13 +84,13 @@ function App() {
                             {/* ADD NAVIGATION LINKS */}
                             <nav>
                                 <Link
-                                    to="/"
+                                    to="/portfolios"
                                     style={{
                                         marginRight: "15px",
                                         color: "white",
                                     }}
                                 >
-                                    Dashboard
+                                    Mis Portafolios
                                 </Link>
                                 <Link
                                     to="/calculator"

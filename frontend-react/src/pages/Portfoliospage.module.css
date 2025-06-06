@@ -1,0 +1,43 @@
+/* frontend-react/src/pages/PortfoliosPage.module.css */
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 32px;
+}
+
+.pageTitle {
+    font-size: 2rem;
+    margin-bottom: 24px;
+    text-align: center;
+    color: var(--text-heading);
+}
+
+.portfolioList {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 32px;
+}
+
+.portfolioItem {
+    margin-bottom: 12px;
+}
+
+.linkButton {
+    background: none;
+    border: none;
+    color: var(--color-accent-blue);
+    font-size: 1.1rem;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.linkButton:hover {
+    opacity: 0.8;
+}
+
+.loadingText,
+.errorText {
+    text-align: center;
+    margin-top: 32px;
+}
