@@ -1,68 +1,92 @@
+/* frontend-react/src/index.css */
+
+/* Import Google Fonts - Inter */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+/*
+   ==========================================================================
+   Root Design System & Color Palette
+   Inspired by "Bloomberg meets Apple Keynote"
+   ==========================================================================
+*/
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+    --color-background-dark: #0d1117; /* Deep, dark blue-charcoal */
+    --color-background-card: #161b22; /* A slightly lighter shade for raised elements */
+    --color-border: #30363d; /* Subtle border color for definition */
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+    --color-text-primary: #c9d1d9; /* Softer white for primary text */
+    --color-text-secondary: #8b949e; /* Greyed-out text for subtitles, UIDs, etc. */
+    --color-text-heading: #f0f6fc; /* Bright, crisp white for main headings */
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    --color-accent-blue: #58a6ff; /* Vibrant, professional blue for primary actions */
+    --color-accent-green: #3fb950; /* Clear, positive green for growth/success */
+    --color-accent-purple: #a371f7; /* Rich purple for highlights and secondary accents */
+    --color-accent-red: #f85149; /* Clear red for warnings or destructive actions */
+
+    --font-family-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, Helvetica, Arial, sans-serif;
+    --border-radius-medium: 8px;
+    --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+/*
+   ==========================================================================
+   Global Resets & Body Styles
+   ==========================================================================
+*/
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+    margin: 0;
+    font-family: var(--font-family-sans);
+    background-color: var(--color-background-dark);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/*
+   ==========================================================================
+   General Element Styling
+   ==========================================================================
+*/
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--color-text-heading);
+    font-weight: 600;
+    margin: 0;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+p {
+    margin: 0;
+    color: var(--color-text-secondary);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+button,
+input,
+textarea {
+    font-family: inherit;
+    font-size: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-medium);
+    background-color: var(--color-background-card);
+    color: var(--color-text-primary);
+    padding: 12px;
+    transition: all 0.2s ease-in-out;
+}
+
+button:hover,
+input:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--color-accent-blue);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
 }

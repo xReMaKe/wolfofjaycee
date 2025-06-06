@@ -1,0 +1,68 @@
+/* frontend-react/src/components/AddPortfolioForm.module.css */
+
+.formContainer {
+    padding: 24px;
+    background-color: var(--color-background-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-medium);
+    margin-top: 40px;
+}
+
+.title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-heading);
+    margin: 0 0 20px 0;
+    text-align: center;
+}
+
+.input,
+.textarea {
+    /* Inherits global styles from index.css */
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.button {
+    /* Inherits global styles from index.css */
+    width: 100%;
+    padding: 14px;
+    font-weight: 600;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    background-color: var(--color-accent-blue);
+}
+
+.button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
+.button:not(:disabled):hover {
+    background-color: #80bfff;
+    border-color: var(--color-accent-blue);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+}
+
+.message {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 0.9rem;
+    min-height: 1.2em; /* Prevents layout jump */
+}
+
+.successMessage {
+    composes: message;
+    color: var(--color-accent-green);
+}
+
+.errorMessage {
+    composes: message;
+    color: var(--color-accent-red);
+}

@@ -1,223 +1,148 @@
 // frontend-react/src/App.tsx
-// Corrected imports for React hooks
-import { useState, useEffect } from "react"; // ADD useState and useEffect here
-import "./App.css";
-import { useAuth } from "./contexts/AuthContext";
+import { useState, useEffect } from "react";
+
+// CORRECTED FIREBASE IMPORTS: Separating functions and types
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import type { User } from "firebase/auth";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import type { Query } from "firebase/firestore";
+import { auth, db } from "./firebase";
+
+// Import components
 import AuthForms from "./components/AuthForms";
-import { signOut } from "firebase/auth";
-import { auth, db } from "./firebase"; // Ensure 'db' is here
-import { collection, query, where, getDocs } from "firebase/firestore"; // Firestore imports
-import PortfolioDetail from "./components/PortfolioDetail"; // NEW: Import PortfolioDetail
+import PortfolioDetail from "./components/PortfolioDetail";
 import AddPortfolioForm from "./components/AddPortfolioForm";
 
-// Define an interface for your Portfolio data structure
+// Import our CSS module
+import styles from "./App.module.css";
+
+// Define the structure of a Portfolio object
 interface Portfolio {
     id: string;
     name: string;
-    description?: string; // Optional field
+    description?: string;
+    // IMPORTANT: Make sure this matches your Firestore document fields
     userId: string;
-    // Add other fields present in your Firestore 'portfolios' documents
 }
 
 function App() {
-    const { currentUser, loading } = useAuth();
-    const [portfolios, setPortfolios] = useState<Portfolio[]>([]); // Type state as Portfolio[]
-    const [refreshTrigger, setRefreshTrigger] = useState(0); // NEW: State to trigger refresh
-    const handleLogout = async () => {
-        try {
-            await signOut(auth);
-            console.log("Sesión cerrada.");
-        } catch (error) {
-            console.error("Error al cerrar sesión:", error);
-        }
-    };
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+    const [isLoading, setIsLoading] = useState(true); // To show a loading state
 
-    // …inside useEffect…
-
+    // Effect for handling user authentication state changes
     useEffect(() => {
-        const fetchPortfolios = async () => {
-            if (currentUser) {
-                try {
-                    const q = query(
-                        collection(db, "portfolios"),
-                        where("userId", "==", currentUser.uid)
-                    );
-                    const querySnapshot = await getDocs(q);
+        const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+            setCurrentUser(user);
+            setIsLoading(false);
+        });
+        // Cleanup function to unsubscribe when the component unmounts
+        return () => unsubscribeAuth();
+    }, []);
 
-                    const fetchedPortfolios = querySnapshot.docs.map((doc) => {
-                        const data = doc.data() as Portfolio;
-                        return {
-                            ...data,
-                            id: doc.id, // overwrite any “id” in data
-                        };
-                    });
+    // Effect for fetching portfolios in real-time when the user is logged in
+    useEffect(() => {
+        // Only run if there is a current user
+        if (currentUser) {
+            // IMPORTANT: Using "userId" to match your original code.
+            // Verify this is the correct field name in your Firestore 'portfolios' collection.
+            const q: Query = query(
+                collection(db, "portfolios"),
+                where("userId", "==", currentUser.uid)
+            );
 
-                    setPortfolios(fetchedPortfolios);
-                    console.log("Portfolios fetched:", fetchedPortfolios);
-                } catch (error) {
-                    // ← THIS CATCH BLOCK WAS MISSING
-                    console.error("Error fetching portfolios:", error);
-                }
-            } else {
-                setPortfolios([]); // Clear portfolios if user logs out
-            }
-        };
+            // onSnapshot creates a real-time listener
+            const unsubscribeFirestore = onSnapshot(q, (snapshot) => {
+                const userPortfolios = snapshot.docs.map((doc) => ({
+                    id: doc.id,
+                    ...doc.data(),
+                })) as Portfolio[];
+                setPortfolios(userPortfolios);
+            });
 
-        fetchPortfolios();
-    }, [currentUser, refreshTrigger]);
-    const handlePortfolioAdded = () => {
-        // NEW: Callback function for form
-        setRefreshTrigger((prev) => prev + 1); // Increment to trigger useEffect
+            // Cleanup function to unsubscribe from Firestore listener
+            return () => unsubscribeFirestore();
+        } else {
+            // If there is no user, ensure the portfolios list is empty
+            setPortfolios([]);
+        }
+    }, [currentUser]); // This effect re-runs only when currentUser changes
+
+    const handleLogout = () => {
+        signOut(auth).catch((error) => console.error("Logout Error:", error));
     };
 
-    if (loading) {
-        return (
-            <div
-                style={{
-                    textAlign: "center",
-                    padding: "50px",
-                    background: "#1c1c1c",
-                    color: "white",
-                    height: "100vh",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                }}
-            >
-                Cargando autenticación...
-            </div>
-        );
+    const handlePortfolioAdded = () => {
+        // This function is passed to the form.
+        // With real-time updates from onSnapshot, we no longer need to manually trigger a refresh.
+        console.log("Portfolio added! UI will update automatically.");
+    };
+
+    // Show a loading message while we check for a logged-in user
+    if (isLoading) {
+        return <div>Loading...</div>;
     }
 
     return (
-        <div className="App">
-            <header
-                className="App-header"
-                style={{
-                    background: "#282c34",
-                    color: "white",
-                    padding: "20px",
-                    textAlign: "center",
-                }}
-            >
-                <h1>WolfOfJayCee Finanzas</h1>
-                <p>Visualiza tu Riqueza</p>
-                <div
-                    style={{ position: "absolute", top: "10px", right: "20px" }}
-                >
-                    {currentUser ? (
-                        <span style={{ marginRight: "10px" }}>
+        <div className={styles.app}>
+            <header className={styles.header}>
+                <h1 className={styles.headerTitle}>WolfOfJayCee Finanzas</h1>
+                {currentUser && (
+                    <div className={styles.authStatus}>
+                        <span className={styles.welcomeMessage}>
                             Bienvenido, {currentUser.email}
                         </span>
-                    ) : (
-                        <span>No ha iniciado sesión.</span>
-                    )}
-                </div>
-            </header>
-
-            <main
-                style={{
-                    padding: "20px",
-                    maxWidth: "800px",
-                    margin: "auto",
-                    background: "#1c1c1c",
-                    color: "white",
-                    borderRadius: "8px",
-                }}
-            >
-                {currentUser ? (
-                    <div id="logged-in-content">
-                        <h2
-                            style={{
-                                textAlign: "center",
-                                marginBottom: "20px",
-                            }}
-                        >
-                            Tu Portafolio
-                        </h2>
-                        <p
-                            style={{
-                                textAlign: "center",
-                                fontSize: "small",
-                                opacity: 0.7,
-                            }}
-                        >
-                            Tu UID: {currentUser.uid}
-                        </p>{" "}
-                        {/* Keep UID display here for now */}
-                        {portfolios.length > 0 ? (
-                            <div>
-                                <h3 style={{ textAlign: "center" }}>
-                                    Tus Portafolios:
-                                </h3>
-                                <ul>
-                                    {portfolios.map(
-                                        (
-                                            portfolio: Portfolio // Type portfolio parameter
-                                        ) => (
-                                            <li
-                                                key={portfolio.id}
-                                                style={{
-                                                    marginBottom: "10px",
-                                                    padding: "10px",
-                                                    background: "#282c34",
-                                                    borderRadius: "5px",
-                                                }}
-                                            >
-                                                <strong>
-                                                    {portfolio.name}
-                                                </strong>{" "}
-                                                (
-                                                {portfolio.description ||
-                                                    "Sin descripción"}
-                                                )
-                                            </li>
-                                        )
-                                    )}
-                                </ul>
-                                {/* NEW: Render PortfolioDetail for the first portfolio found */}
-                                {portfolios[0] &&
-                                    currentUser && ( // Ensure portfolio and user exist
-                                        <PortfolioDetail
-                                            portfolioId={portfolios[0].id}
-                                            currentUser={currentUser}
-                                        />
-                                    )}
-                                {/* END NEW */}
-                            </div>
-                        ) : (
-                            <p style={{ textAlign: "center" }}>
-                                No tienes portafolios creados todavía.
-                            </p>
-                        )}
-                        {/* NEW: Render AddPortfolioForm */}
-                        {currentUser && (
-                            <AddPortfolioForm
-                                currentUser={currentUser}
-                                onPortfolioAdded={handlePortfolioAdded}
-                            />
-                        )}
-                        {/* END NEW */}
                         <button
                             onClick={handleLogout}
-                            style={{
-                                padding: "10px 15px",
-                                backgroundColor: "#f44336",
-                                color: "white",
-                                border: "none",
-                                cursor: "pointer",
-                                borderRadius: "5px",
-                                display: "block",
-                                margin: "20px auto",
-                            }}
+                            className={styles.logoutButton}
                         >
                             Cerrar Sesión
                         </button>
                     </div>
-                ) : (
-                    <div id="logged-out-content">
-                        <AuthForms />
+                )}
+            </header>
+
+            <main className={styles.mainContent}>
+                {currentUser ? (
+                    <div>
+                        <h2 className={styles.sectionTitle}>Mis Portafolios</h2>
+                        {portfolios.length > 0 ? (
+                            <ul className={styles.portfolioList}>
+                                {portfolios.map((portfolio) => (
+                                    <li
+                                        key={portfolio.id}
+                                        className={styles.portfolioListItem}
+                                    >
+                                        <div className={styles.portfolioName}>
+                                            {portfolio.name}
+                                        </div>
+                                        <p className={styles.portfolioDesc}>
+                                            {portfolio.description ||
+                                                "Sin descripción"}
+                                        </p>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <div className={styles.emptyState}>
+                                <p>No tienes portafolios creados todavía.</p>
+                            </div>
+                        )}
+
+                        <AddPortfolioForm
+                            currentUser={currentUser}
+                            onPortfolioAdded={handlePortfolioAdded}
+                        />
+
+                        {portfolios.length > 0 && (
+                            <PortfolioDetail
+                                portfolioId={portfolios[0].id}
+                                currentUser={currentUser}
+                            />
+                        )}
                     </div>
+                ) : (
+                    <AuthForms />
                 )}
             </main>
         </div>

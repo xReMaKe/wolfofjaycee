@@ -1,0 +1,83 @@
+/* frontend-react/src/components/PortfolioDetail.module.css */
+
+.container {
+    padding: 24px;
+    background-color: var(--color-background-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-medium);
+    margin-top: 40px;
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text-heading);
+    margin: 0 0 24px 0;
+}
+
+.positionsTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.positionsTable th,
+.positionsTable td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.positionsTable th {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.positionsTable tbody tr {
+    transition: background-color 0.2s ease-in-out;
+}
+
+.positionsTable tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.03); /* Subtle hover effect */
+}
+
+.symbol {
+    font-weight: 600;
+    color: var(--color-text-heading);
+}
+
+.priceUp {
+    color: var(--color-accent-green);
+    font-weight: 500;
+}
+
+.priceDown {
+    color: var(--color-accent-red);
+    font-weight: 500;
+}
+
+.priceNeutral {
+    color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+.loadingText,
+.errorText,
+.emptyText {
+    padding: 40px;
+    text-align: center;
+    color: var(--color-text-secondary);
+}
+
+.errorText {
+    color: var(--color-accent-red);
+}
+
+/* Add a separator for the Add Position Form below the table */
+.formSeparator {
+    margin-top: 32px;
+    padding-top: 32px;
+    border-top: 1px solid var(--color-border);
+}

@@ -1,0 +1,81 @@
+/* frontend-react/src/components/AuthForms.module.css */
+
+.authContainer {
+    max-width: 400px;
+    margin: 40px auto;
+    padding: 2rem;
+    background-color: var(--color-background-card);
+    border-radius: var(--border-radius-medium);
+    border: 1px solid var(--color-border);
+}
+
+.formSection {
+    margin-bottom: 2.5rem;
+}
+
+.formSection:last-of-type {
+    margin-bottom: 0;
+}
+
+.title {
+    margin-bottom: 1.5rem;
+    font-size: 1.75rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--color-text-heading);
+}
+
+.inputField {
+    /* Uses global input styles from index.css */
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.button {
+    /* Uses global button styles from index.css */
+    width: 100%;
+    padding: 14px;
+    font-weight: 600;
+    color: #fff; /* White text for buttons */
+    border: none; /* Override default border for solid color buttons */
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.button:active {
+    transform: scale(0.98);
+}
+
+.signupButton {
+    background-color: var(--color-accent-green);
+}
+
+.signupButton:hover {
+    background-color: #55d46f; /* Slightly lighter green on hover */
+    border-color: var(--color-accent-green);
+    box-shadow: 0 0 0 3px rgba(63, 185, 80, 0.2);
+}
+
+.loginButton {
+    background-color: var(--color-accent-blue);
+}
+
+.loginButton:hover {
+    background-color: #80bfff; /* Slightly lighter blue on hover */
+    border-color: var(--color-accent-blue);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+}
+
+.message {
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+    min-height: 1.2em; /* Prevents layout shift when message appears */
+    color: var(--color-text-primary);
+}
+
+.errorMessage {
+    composes: message; /* Inherits all styles from .message */
+    color: var(--color-accent-red);
+}

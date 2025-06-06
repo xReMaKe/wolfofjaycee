@@ -1,12 +1,13 @@
 // frontend-react/src/components/AddPortfolioForm.tsx
 import React, { useState } from "react";
-import { collection, addDoc } from "firebase/firestore"; // Firestore functions
-import { db } from "../firebase"; // Firestore instance
-import type { User } from "firebase/auth"; // Firebase User type
+import { collection, addDoc } from "firebase/firestore";
+import { db } from "../firebase";
+import type { User } from "firebase/auth";
+import styles from "./AddPortfolioForm.module.css"; // Import the CSS module
 
 interface AddPortfolioFormProps {
     currentUser: User;
-    onPortfolioAdded: () => void; // Callback to refresh portfolios in parent
+    onPortfolioAdded: () => void;
 }
 
 const AddPortfolioForm: React.FC<AddPortfolioFormProps> = ({
@@ -20,7 +21,7 @@ const AddPortfolioForm: React.FC<AddPortfolioFormProps> = ({
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault(); // Prevent default form submission
+        e.preventDefault();
         setLoading(true);
         setMessage("");
         setError(null);
@@ -32,17 +33,16 @@ const AddPortfolioForm: React.FC<AddPortfolioFormProps> = ({
         }
 
         try {
-            // Add a new document to the 'portfolios' collection
             await addDoc(collection(db, "portfolios"), {
                 name: name,
                 description: description,
-                userId: currentUser.uid, // Link to the current user
-                createdAt: new Date(), // Timestamp
+                userId: currentUser.uid,
+                createdAt: new Date(),
             });
             setMessage("Portafolio añadido exitosamente!");
             setName("");
             setDescription("");
-            onPortfolioAdded(); // Notify parent to refresh portfolios
+            onPortfolioAdded();
         } catch (err: any) {
             console.error("Error al añadir portafolio:", err);
             setError(`Error al añadir portafolio: ${err.message}`);
@@ -51,40 +51,11 @@ const AddPortfolioForm: React.FC<AddPortfolioFormProps> = ({
         }
     };
 
-    const inputStyle: React.CSSProperties = {
-        display: "block",
-        width: "100%",
-        padding: "10px",
-        margin: "10px 0",
-        borderRadius: "4px",
-        border: "1px solid #444",
-        backgroundColor: "#333",
-        color: "white",
-        boxSizing: "border-box",
-    };
-
-    const buttonStyle: React.CSSProperties = {
-        padding: "10px 15px",
-        color: "white",
-        border: "none",
-        cursor: "pointer",
-        borderRadius: "5px",
-        width: "100%",
-        marginTop: "10px",
-    };
+    // The inputStyle and buttonStyle constants have been removed.
 
     return (
-        <div
-            style={{
-                padding: "20px",
-                background: "#282c34",
-                borderRadius: "8px",
-                marginTop: "30px",
-            }}
-        >
-            <h3 style={{ textAlign: "center", marginBottom: "20px" }}>
-                Añadir Nuevo Portafolio
-            </h3>
+        <div className={styles.formContainer}>
+            <h3 className={styles.title}>Añadir Nuevo Portafolio</h3>
             <form onSubmit={handleSubmit}>
                 <input
                     type="text"
@@ -92,7 +63,7 @@ const AddPortfolioForm: React.FC<AddPortfolioFormProps> = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    style={inputStyle}
+                    className={styles.input}
                     disabled={loading}
                 />
                 <textarea
@@ -100,38 +71,18 @@ const AddPortfolioForm: React.FC<AddPortfolioFormProps> = ({
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
-                    style={inputStyle}
+                    className={styles.textarea}
                     disabled={loading}
                 ></textarea>
                 <button
                     type="submit"
-                    style={{ ...buttonStyle, backgroundColor: "#007bff" }}
+                    className={styles.button}
                     disabled={loading}
                 >
                     {loading ? "Añadiendo..." : "Añadir Portafolio"}
                 </button>
-                {message && (
-                    <p
-                        style={{
-                            color: "lightgreen",
-                            textAlign: "center",
-                            marginTop: "10px",
-                        }}
-                    >
-                        {message}
-                    </p>
-                )}
-                {error && (
-                    <p
-                        style={{
-                            color: "salmon",
-                            textAlign: "center",
-                            marginTop: "10px",
-                        }}
-                    >
-                        {error}
-                    </p>
-                )}
+                {message && <p className={styles.successMessage}>{message}</p>}
+                {error && <p className={styles.errorMessage}>{error}</p>}
             </form>
         </div>
     );

@@ -6,6 +6,9 @@ import {
     signInWithEmailAndPassword,
 } from "firebase/auth";
 
+// STEP 1: Import the CSS Module. This 'styles' object holds all our class names.
+import styles from "./AuthForms.module.css";
+
 const AuthForms: React.FC = () => {
     const [signupEmail, setSignupEmail] = useState("");
     const [signupPassword, setSignupPassword] = useState("");
@@ -26,10 +29,11 @@ const AuthForms: React.FC = () => {
                 signupEmail,
                 signupPassword
             );
-            setSignupMessage("Usuario registrado exitosamente!");
+            // We don't set a success message here because the app will automatically
+            // navigate the user away upon successful login.
         } catch (error: any) {
             console.error("Error al registrar:", error);
-            setSignupMessage(`Error al registrar: ${error.message}`);
+            setSignupMessage(`Error: ${error.code}`);
         }
     };
 
@@ -41,79 +45,79 @@ const AuthForms: React.FC = () => {
         }
         try {
             await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
-            setLoginMessage("Sesión iniciada exitosamente!");
+            // No success message needed here either.
         } catch (error: any) {
             console.error("Error al iniciar sesión:", error);
-            setLoginMessage(`Error al iniciar sesión: ${error.message}`);
+            setLoginMessage(`Error: ${error.code}`);
         }
     };
 
-    const inputStyle: React.CSSProperties = {
-        display: "block",
-        width: "100%",
-        padding: "10px",
-        margin: "10px 0",
-        borderRadius: "4px",
-        border: "1px solid #ddd",
-        boxSizing: "border-box", // Include padding in width
-    };
+    // STEP 2: We have deleted the 'inputStyle' and 'buttonStyle' constants. They are no longer needed.
 
-    const buttonStyle: React.CSSProperties = {
-        padding: "10px 15px",
-        color: "white",
-        border: "none",
-        cursor: "pointer",
-        borderRadius: "5px",
-        width: "100%",
-    };
-
+    // STEP 3: The JSX is now clean and uses `className` with our imported styles.
     return (
-        <div>
-            <h2>Registrarse</h2>
-            <input
-                type="email"
-                placeholder="Correo electrónico"
-                value={signupEmail}
-                onChange={(e) => setSignupEmail(e.target.value)}
-                style={inputStyle}
-            />
-            <input
-                type="password"
-                placeholder="Contraseña"
-                value={signupPassword}
-                onChange={(e) => setSignupPassword(e.target.value)}
-                style={inputStyle}
-            />
-            <button
-                onClick={handleSignup}
-                style={{ ...buttonStyle, backgroundColor: "#4CAF50" }}
-            >
-                Registrarse
-            </button>
-            <p style={{ color: "red", marginTop: "10px" }}>{signupMessage}</p>
+        <div className={styles.authContainer}>
+            <div className={styles.formSection}>
+                <h2 className={styles.title}>Registrarse</h2>
+                <input
+                    type="email"
+                    placeholder="Correo electrónico"
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                    className={styles.inputField}
+                />
+                <input
+                    type="password"
+                    placeholder="Contraseña"
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
+                    className={styles.inputField}
+                />
+                <button
+                    onClick={handleSignup}
+                    className={`${styles.button} ${styles.signupButton}`}
+                >
+                    Crear Cuenta
+                </button>
+                <p
+                    className={
+                        signupMessage ? styles.errorMessage : styles.message
+                    }
+                >
+                    {signupMessage}
+                </p>
+            </div>
 
-            <h2 style={{ marginTop: "30px" }}>Iniciar Sesión</h2>
-            <input
-                type="email"
-                placeholder="Correo electrónico"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                style={inputStyle}
-            />
-            <input
-                type="password"
-                placeholder="Contraseña"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                style={inputStyle}
-            />
-            <button
-                onClick={handleLogin}
-                style={{ ...buttonStyle, backgroundColor: "#039be5" }}
-            >
-                Iniciar Sesión
-            </button>
-            <p style={{ color: "red", marginTop: "10px" }}>{loginMessage}</p>
+            <div className={styles.formSection}>
+                <h2 className={styles.title}>Iniciar Sesión</h2>
+                <input
+                    type="email"
+                    placeholder="Correo electrónico"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    className={styles.inputField}
+                />
+                <input
+                    type="password"
+                    placeholder="Contraseña"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    className={styles.inputField}
+                />
+                <button
+                    onClick={handleLogin}
+                    className={`${styles.button} ${styles.loginButton}`}
+                >
+                    Iniciar Sesión
+                </button>
+                <p
+                    className={
+                        loginMessage ? styles.errorMessage : styles.message
+                    }
+                >
+                    {loginMessage}
+                </p>
+            </div>
         </div>
     );
 };

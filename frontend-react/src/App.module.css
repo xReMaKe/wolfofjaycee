@@ -1,0 +1,126 @@
+/* frontend-react/src/App.module.css */
+
+.app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--color-background-dark);
+}
+
+/*
+  "Glassmorphism" Header
+*/
+.header {
+    background: rgba(
+        22,
+        27,
+        34,
+        0.7
+    ); /* Use the card color with transparency */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); /* For Safari */
+    border-bottom: 1px solid var(--color-border);
+    padding: 20px 40px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.headerTitle {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text-heading);
+}
+
+.authStatus {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.welcomeMessage {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+.logoutButton {
+    /* Base styles from index.css are inherited */
+    padding: 8px 16px;
+    background-color: var(--color-background-card);
+    color: var(--color-accent-red);
+    border: 1px solid var(--color-accent-red);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.logoutButton:hover {
+    background-color: var(--color-accent-red);
+    color: white;
+    border-color: var(--color-accent-red);
+    box-shadow: 0 0 0 3px rgba(248, 81, 73, 0.2);
+}
+
+/*
+  Main Content Area
+*/
+.mainContent {
+    width: 100%;
+    max-width: 960px;
+    margin: 40px auto;
+    padding: 0 20px;
+    flex-grow: 1;
+}
+
+.sectionTitle {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 12px;
+}
+
+.portfolioList {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 40px 0;
+}
+
+.portfolioListItem {
+    background-color: var(--color-background-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-medium);
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: all 0.2s ease-in-out;
+}
+
+/* The "lift and glow" hover effect */
+.portfolioListItem:hover {
+    transform: translateY(-4px);
+    border-color: var(--color-accent-purple);
+    box-shadow: var(--shadow-medium);
+}
+
+.portfolioName {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--color-text-heading);
+    margin-bottom: 4px;
+}
+
+.portfolioDesc {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+.emptyState {
+    text-align: center;
+    padding: 60px 40px;
+    background-color: var(--color-background-card);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--border-radius-medium);
+    margin-bottom: 40px;
+}

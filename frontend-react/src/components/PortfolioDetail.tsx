@@ -8,9 +8,10 @@ import {
     doc,
     getDoc,
 } from "firebase/firestore";
-import { db } from "../firebase"; // Firestore instance
-import type { User } from "firebase/auth"; // Firebase User type
-import AddPositionForm from "./AddPositionForm"; // Import AddPositionForm
+import { db } from "../firebase";
+import type { User } from "firebase/auth";
+import AddPositionForm from "./AddPositionForm";
+import styles from "./PortfolioDetail.module.css"; // Import the CSS module
 
 interface PortfolioDetailProps {
     portfolioId: string;
@@ -18,16 +19,15 @@ interface PortfolioDetailProps {
 }
 
 interface Position {
-    id: string; // This declares the 'id' field for the Position interface
+    id: string;
     symbol: string;
     quantity: number;
     costBasisPerShare: number;
-    // You can add more fields if present in your positions documents
 }
 
 interface LatestPrice {
     price: number;
-    lastUpdatedAt: { _seconds: number; _nanoseconds: number };
+    lastUpdatedAt: { seconds: number; nanoseconds: number };
 }
 
 const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
@@ -36,250 +36,135 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
 }) => {
     const [positions, setPositions] = useState<Position[]>([]);
     const [prices, setPrices] = useState<{ [symbol: string]: LatestPrice }>({});
-    const [loadingPositions, setLoadingPositions] = useState(true);
-    const [loadingPrices, setLoadingPrices] = useState(true);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-    const [positionsRefreshTrigger, setPositionsRefreshTrigger] = useState(0);
-
-    // Fetch positions for the current portfolio and user
     useEffect(() => {
-        const fetchPositions = async () => {
-            setLoadingPositions(true);
+        const fetchData = async () => {
+            setLoading(true);
             setError(null);
             try {
-                const q = query(
+                // Fetch positions
+                const positionsQuery = query(
                     collection(db, "positions"),
                     where("portfolioId", "==", portfolioId),
                     where("userId", "==", currentUser.uid)
                 );
-                const querySnapshot = await getDocs(q);
-                const fetchedPositions: Position[] = querySnapshot.docs.map(
-                    (doc) => {
-                        const data = doc.data(); // Get the raw data first
-                        return {
-                            ...(data as Position), // Spread all properties from the document's data (TypeScript assumes 'id' here)
-                            id: doc.id, // Explicitly add the document's ID, which will overwrite any 'id' from 'data'
-                        };
-                    }
+                const positionsSnapshot = await getDocs(positionsQuery);
+                const fetchedPositions: Position[] = positionsSnapshot.docs.map(
+                    (doc) => ({
+                        id: doc.id,
+                        ...(doc.data() as Omit<Position, "id">),
+                    })
                 );
                 setPositions(fetchedPositions);
-            } catch (err: any) {
-                console.error("Error fetching positions:", err);
-                setError(`Error al cargar posiciones: ${err.message}`);
-            } finally {
-                setLoadingPositions(false);
-            }
-        };
 
-        fetchPositions();
-    }, [portfolioId, currentUser, positionsRefreshTrigger]);
-
-    // Fetch latest prices for the fetched positions
-    useEffect(() => {
-        const fetchPrices = async () => {
-            if (positions.length > 0) {
-                setLoadingPrices(true);
-                const fetchedPrices: { [symbol: string]: LatestPrice } = {};
-                try {
-                    for (const position of positions) {
+                // Fetch prices for the positions
+                if (fetchedPositions.length > 0) {
+                    const fetchedPrices: { [symbol: string]: LatestPrice } = {};
+                    for (const position of fetchedPositions) {
                         const priceDocRef = doc(
                             db,
                             "latest_prices",
                             position.symbol
                         );
                         const priceDocSnap = await getDoc(priceDocRef);
-
                         if (priceDocSnap.exists()) {
                             fetchedPrices[position.symbol] =
                                 priceDocSnap.data() as LatestPrice;
-                        } else {
-                            console.warn(
-                                `Price for ${position.symbol} not found in latest_prices.`
-                            );
-                            fetchedPrices[position.symbol] = {
-                                price: 0,
-                                lastUpdatedAt: { _seconds: 0, _nanoseconds: 0 },
-                            };
                         }
                     }
                     setPrices(fetchedPrices);
-                } catch (err: any) {
-                    console.error("Error fetching prices:", err);
-                } finally {
-                    setLoadingPrices(false);
                 }
-            } else {
-                setPrices({});
-                setLoadingPrices(false);
+            } catch (err: any) {
+                console.error("Error fetching portfolio details:", err);
+                setError(`Error al cargar datos: ${err.message}`);
+            } finally {
+                setLoading(false);
             }
         };
 
-        fetchPrices();
-    }, [positions]);
+        fetchData();
+    }, [portfolioId, currentUser, refreshTrigger]);
 
     const handlePositionAdded = () => {
-        setPositionsRefreshTrigger((prev) => prev + 1);
+        setRefreshTrigger((prev) => prev + 1);
     };
 
-    if (loadingPositions) {
-        return <p style={{ textAlign: "center" }}>Cargando posiciones...</p>;
+    const getPriceColorClass = (currentPrice: number, costBasis: number) => {
+        if (currentPrice > costBasis) return styles.priceUp;
+        if (currentPrice < costBasis) return styles.priceDown;
+        return styles.priceNeutral;
+    };
+
+    if (loading) {
+        return <p className={styles.loadingText}>Cargando posiciones...</p>;
     }
 
     if (error) {
-        return <p style={{ textAlign: "center", color: "red" }}>{error}</p>;
-    }
-
-    if (positions.length === 0) {
-        return (
-            <div style={{ textAlign: "center" }}>
-                <p>No tienes posiciones en este portafolio todavía.</p>
-                {currentUser && (
-                    <AddPositionForm
-                        portfolioId={portfolioId}
-                        currentUser={currentUser}
-                        onPositionAdded={handlePositionAdded}
-                    />
-                )}
-            </div>
-        );
+        return <p className={styles.errorText}>{error}</p>;
     }
 
     return (
-        <div>
-            <h3 style={{ textAlign: "center", marginTop: "20px" }}>
-                Tus Posiciones:
-            </h3>
-            <table
-                style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    marginTop: "10px",
-                }}
-            >
-                <thead>
-                    <tr style={{ background: "#333" }}>
-                        <th
-                            style={{
-                                padding: "8px",
-                                border: "1px solid #444",
-                                textAlign: "left",
-                            }}
-                        >
-                            Símbolo
-                        </th>
-                        <th
-                            style={{
-                                padding: "8px",
-                                border: "1px solid #444",
-                                textAlign: "left",
-                            }}
-                        >
-                            Cantidad
-                        </th>
-                        <th
-                            style={{
-                                padding: "8px",
-                                border: "1px solid #444",
-                                textAlign: "left",
-                            }}
-                        >
-                            Costo Base
-                        </th>
-                        <th
-                            style={{
-                                padding: "8px",
-                                border: "1px solid #444",
-                                textAlign: "left",
-                            }}
-                        >
-                            Precio Actual
-                        </th>
-                        <th
-                            style={{
-                                padding: "8px",
-                                border: "1px solid #444",
-                                textAlign: "left",
-                            }}
-                        >
-                            Valor Actual
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {positions.map((position) => {
-                        const currentPrice =
-                            prices[position.symbol]?.price || 0;
-                        const currentValue = currentPrice * position.quantity;
-                        return (
-                            <tr
-                                key={position.id}
-                                style={{ background: "#282c34" }}
-                            >
-                                <td
-                                    style={{
-                                        padding: "8px",
-                                        border: "1px solid #444",
-                                    }}
-                                >
-                                    {position.symbol}
-                                </td>
-                                <td
-                                    style={{
-                                        padding: "8px",
-                                        border: "1px solid #444",
-                                    }}
-                                >
-                                    {position.quantity}
-                                </td>
-                                <td
-                                    style={{
-                                        padding: "8px",
-                                        border: "1px solid #444",
-                                    }}
-                                >
-                                    ${position.costBasisPerShare.toFixed(2)}
-                                </td>
-                                <td
-                                    style={{
-                                        padding: "8px",
-                                        border: "1px solid #444",
-                                        color:
-                                            currentPrice >
+        <div className={styles.container}>
+            <h3 className={styles.title}>Posiciones del Portafolio</h3>
+            {positions.length > 0 ? (
+                <table className={styles.positionsTable}>
+                    <thead>
+                        <tr>
+                            <th>Símbolo</th>
+                            <th>Cantidad</th>
+                            <th>Costo Base</th>
+                            <th>Precio Actual</th>
+                            <th>Valor Actual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {positions.map((position) => {
+                            const currentPrice =
+                                prices[position.symbol]?.price ?? 0;
+                            const currentValue =
+                                currentPrice * position.quantity;
+                            return (
+                                <tr key={position.id}>
+                                    <td>
+                                        <span className={styles.symbol}>
+                                            {position.symbol}
+                                        </span>
+                                    </td>
+                                    <td>{position.quantity}</td>
+                                    <td>
+                                        ${position.costBasisPerShare.toFixed(2)}
+                                    </td>
+                                    <td
+                                        className={getPriceColorClass(
+                                            currentPrice,
                                             position.costBasisPerShare
-                                                ? "lightgreen"
-                                                : currentPrice <
-                                                  position.costBasisPerShare
-                                                ? "salmon"
-                                                : "white",
-                                    }}
-                                >
-                                    {loadingPrices
-                                        ? "Cargando..."
-                                        : `$${currentPrice.toFixed(2)}`}
-                                </td>
-                                <td
-                                    style={{
-                                        padding: "8px",
-                                        border: "1px solid #444",
-                                    }}
-                                >
-                                    {loadingPrices
-                                        ? "Cargando..."
-                                        : `$${currentValue.toFixed(2)}`}
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
-            {currentUser && (
+                                        )}
+                                    >
+                                        ${currentPrice.toFixed(2)}
+                                    </td>
+                                    <td>${currentValue.toFixed(2)}</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            ) : (
+                <p className={styles.emptyText}>
+                    No tienes posiciones en este portafolio todavía.
+                </p>
+            )}
+
+            <div className={styles.formSeparator}>
+                {/* This form will be unstyled for now. We will style it in the next step. */}
                 <AddPositionForm
                     portfolioId={portfolioId}
                     currentUser={currentUser}
                     onPositionAdded={handlePositionAdded}
                 />
-            )}
+            </div>
         </div>
     );
 };

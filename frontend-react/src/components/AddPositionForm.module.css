@@ -1,0 +1,65 @@
+/* frontend-react/src/components/AddPositionForm.module.css */
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin: 0 0 8px 0;
+    text-align: left;
+}
+
+.inputGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+}
+
+.input {
+    /* Inherits global styles from index.css */
+    width: 100%;
+}
+
+.button {
+    /* Inherits global styles from index.css */
+    padding: 12px;
+    font-weight: 600;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    background-color: var(
+        --color-accent-purple
+    ); /* Using purple for this action */
+}
+
+.button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
+.button:not(:disabled):hover {
+    background-color: #b38eff; /* Lighter purple on hover */
+    border-color: var(--color-accent-purple);
+    box-shadow: 0 0 0 3px rgba(163, 113, 247, 0.2);
+}
+
+.message {
+    text-align: center;
+    font-size: 0.9rem;
+    min-height: 1.2em; /* Prevents layout jump */
+}
+
+.successMessage {
+    composes: message;
+    color: var(--color-accent-green);
+}
+
+.errorMessage {
+    composes: message;
+    color: var(--color-accent-red);
+}
