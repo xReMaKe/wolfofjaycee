@@ -11,7 +11,7 @@
 .title {
     font-size: 1.5rem;
     font-weight: 600;
-    color: var(--color-text-heading);
+    color: var(--text-heading);
     margin: 0 0 24px 0;
 }
 
@@ -30,7 +30,7 @@
 .positionsTable th {
     font-size: 0.8rem;
     font-weight: 600;
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }

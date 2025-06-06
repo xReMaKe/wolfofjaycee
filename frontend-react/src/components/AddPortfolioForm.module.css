@@ -11,7 +11,7 @@
 .title {
     font-size: 1.25rem;
     font-weight: 600;
-    color: var(--color-text-heading);
+    color: var(--text-heading);
     margin: 0 0 20px 0;
     text-align: center;
 }

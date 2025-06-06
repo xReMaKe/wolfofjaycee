@@ -4,7 +4,6 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    background-color: var(--color-background-dark);
 }
 
 /*
@@ -32,7 +31,7 @@
 .headerTitle {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--color-text-heading);
+    color: var(--text-heading);
 }
 
 .authStatus {
@@ -43,7 +42,7 @@
 
 .welcomeMessage {
     font-size: 0.9rem;
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
 }
 
 .logoutButton {
@@ -80,12 +79,14 @@
     margin-bottom: 24px;
     border-bottom: 1px solid var(--color-border);
     padding-bottom: 12px;
+    color: var(--text-heading);
 }
 
 .portfolioList {
     list-style: none;
     padding: 0;
     margin: 0 0 40px 0;
+    color: var(--text-heading); /* ADD THIS */
 }
 
 .portfolioListItem {
@@ -113,7 +114,7 @@
 
 .portfolioDesc {
     font-size: 0.9rem;
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
 }
 
 .emptyState {
@@ -123,4 +124,5 @@
     border: 1px dashed var(--color-border);
     border-radius: var(--border-radius-medium);
     margin-bottom: 40px;
+    color: var(--text-secondary);
 }

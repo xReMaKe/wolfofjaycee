@@ -1,19 +1,18 @@
-// frontend-react/src/App.tsx
+// src/App.tsx
 import { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom"; // IMPORT ROUTER COMPONENTS
 
-// CORRECTED FIREBASE IMPORTS: Separating functions and types
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import type { User } from "firebase/auth";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import type { Query } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
-// Import components
+// Page and Component Imports
 import AuthForms from "./components/AuthForms";
-import PortfolioDetail from "./components/PortfolioDetail";
-import AddPortfolioForm from "./components/AddPortfolioForm";
+import DashboardPage from "./pages/DashboardPage"; // IMPORT DASHBOARD
+import CalculatorPage from "./pages/CalculatorPage"; // IMPORT CALCULATOR
 
-// Import our CSS module
 import styles from "./App.module.css";
 
 // Define the structure of a Portfolio object
@@ -21,37 +20,29 @@ interface Portfolio {
     id: string;
     name: string;
     description?: string;
-    // IMPORTANT: Make sure this matches your Firestore document fields
     userId: string;
 }
 
 function App() {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
-    const [isLoading, setIsLoading] = useState(true); // To show a loading state
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Effect for handling user authentication state changes
+    // This logic for auth and data fetching remains EXACTLY THE SAME
     useEffect(() => {
         const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
             setCurrentUser(user);
             setIsLoading(false);
         });
-        // Cleanup function to unsubscribe when the component unmounts
         return () => unsubscribeAuth();
     }, []);
 
-    // Effect for fetching portfolios in real-time when the user is logged in
     useEffect(() => {
-        // Only run if there is a current user
         if (currentUser) {
-            // IMPORTANT: Using "userId" to match your original code.
-            // Verify this is the correct field name in your Firestore 'portfolios' collection.
             const q: Query = query(
                 collection(db, "portfolios"),
                 where("userId", "==", currentUser.uid)
             );
-
-            // onSnapshot creates a real-time listener
             const unsubscribeFirestore = onSnapshot(q, (snapshot) => {
                 const userPortfolios = snapshot.docs.map((doc) => ({
                     id: doc.id,
@@ -59,93 +50,93 @@ function App() {
                 })) as Portfolio[];
                 setPortfolios(userPortfolios);
             });
-
-            // Cleanup function to unsubscribe from Firestore listener
             return () => unsubscribeFirestore();
         } else {
-            // If there is no user, ensure the portfolios list is empty
             setPortfolios([]);
         }
-    }, [currentUser]); // This effect re-runs only when currentUser changes
+    }, [currentUser]);
 
     const handleLogout = () => {
         signOut(auth).catch((error) => console.error("Logout Error:", error));
     };
 
     const handlePortfolioAdded = () => {
-        // This function is passed to the form.
-        // With real-time updates from onSnapshot, we no longer need to manually trigger a refresh.
         console.log("Portfolio added! UI will update automatically.");
     };
 
-    // Show a loading message while we check for a logged-in user
     if (isLoading) {
         return <div>Loading...</div>;
     }
 
     return (
-        <div className={styles.app}>
-            <header className={styles.header}>
-                <h1 className={styles.headerTitle}>WolfOfJayCee Finanzas</h1>
-                {currentUser && (
-                    <div className={styles.authStatus}>
-                        <span className={styles.welcomeMessage}>
-                            Bienvenido, {currentUser.email}
-                        </span>
-                        <button
-                            onClick={handleLogout}
-                            className={styles.logoutButton}
-                        >
-                            Cerrar Sesión
-                        </button>
-                    </div>
-                )}
-            </header>
+        // The BrowserRouter is the top-level router component
+        <BrowserRouter>
+            <div className={styles.app}>
+                <header className={styles.header}>
+                    <h1 className={styles.headerTitle}>
+                        WolfOfJayCee Finanzas
+                    </h1>
+                    {currentUser && (
+                        <div className={styles.authStatus}>
+                            {/* ADD NAVIGATION LINKS */}
+                            <nav>
+                                <Link
+                                    to="/"
+                                    style={{
+                                        marginRight: "15px",
+                                        color: "white",
+                                    }}
+                                >
+                                    Dashboard
+                                </Link>
+                                <Link
+                                    to="/calculator"
+                                    style={{
+                                        marginRight: "15px",
+                                        color: "white",
+                                    }}
+                                >
+                                    Calculadora
+                                </Link>
+                            </nav>
+                            <span className={styles.welcomeMessage}>
+                                Bienvenido, {currentUser.email}
+                            </span>
+                            <button
+                                onClick={handleLogout}
+                                className={styles.logoutButton}
+                            >
+                                Cerrar Sesión
+                            </button>
+                        </div>
+                    )}
+                </header>
 
-            <main className={styles.mainContent}>
-                {currentUser ? (
-                    <div>
-                        <h2 className={styles.sectionTitle}>Mis Portafolios</h2>
-                        {portfolios.length > 0 ? (
-                            <ul className={styles.portfolioList}>
-                                {portfolios.map((portfolio) => (
-                                    <li
-                                        key={portfolio.id}
-                                        className={styles.portfolioListItem}
-                                    >
-                                        <div className={styles.portfolioName}>
-                                            {portfolio.name}
-                                        </div>
-                                        <p className={styles.portfolioDesc}>
-                                            {portfolio.description ||
-                                                "Sin descripción"}
-                                        </p>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <div className={styles.emptyState}>
-                                <p>No tienes portafolios creados todavía.</p>
-                            </div>
-                        )}
-
-                        <AddPortfolioForm
-                            currentUser={currentUser}
-                            onPortfolioAdded={handlePortfolioAdded}
-                        />
-
-                        {portfolios.length > 0 && (
-                            <PortfolioDetail
-                                portfolioId={portfolios[0].id}
-                                currentUser={currentUser}
+                <main className={styles.mainContent}>
+                    {currentUser ? (
+                        // THE ROUTER'S VIEWPORT
+                        <Routes>
+                            <Route
+                                path="/"
+                                element={
+                                    <DashboardPage
+                                        portfolios={portfolios}
+                                        currentUser={currentUser}
+                                        onPortfolioAdded={handlePortfolioAdded}
+                                    />
+                                }
                             />
-                        )}
-                    </div>
-                ) : (
-                    <AuthForms />
-                )}
-            </main>
-        </div>
+                            <Route
+                                path="/calculator"
+                                element={<CalculatorPage />}
+                            />
+                        </Routes>
+                    ) : (
+                        <AuthForms />
+                    )}
+                </main>
+            </div>
+        </BrowserRouter>
     );
 }
 

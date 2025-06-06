@@ -3,37 +3,44 @@
 /* Import Google Fonts - Inter */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
-/*
-   ==========================================================================
-   Root Design System & Color Palette
-   Inspired by "Bloomberg meets Apple Keynote"
-   ==========================================================================
-*/
+/* src/index.css */
+
+/* ==========================================================================
+   Definitive "Digital Aurora" Design System
+   ========================================================================== */
 :root {
-    --color-background-dark: #0d1117; /* Deep, dark blue-charcoal */
-    --color-background-card: #161b22; /* A slightly lighter shade for raised elements */
-    --color-border: #30363d; /* Subtle border color for definition */
+    /* Background */
+    --gradient-background: linear-gradient(
+        135deg,
+        #0f0f23 0%,
+        #1a1a2e 50%,
+        #16213e 100%
+    );
 
-    --color-text-primary: #c9d1d9; /* Softer white for primary text */
-    --color-text-secondary: #8b949e; /* Greyed-out text for subtitles, UIDs, etc. */
-    --color-text-heading: #f0f6fc; /* Bright, crisp white for main headings */
+    /* Glass Panels */
+    --glass-background: rgba(30, 30, 50, 0.3);
+    --glass-border: rgba(255, 255, 255, 0.1);
 
-    --color-accent-blue: #58a6ff; /* Vibrant, professional blue for primary actions */
-    --color-accent-green: #3fb950; /* Clear, positive green for growth/success */
-    --color-accent-purple: #a371f7; /* Rich purple for highlights and secondary accents */
-    --color-accent-red: #f85149; /* Clear red for warnings or destructive actions */
+    /* Text */
+    --text-primary: #e0e0e0; /* Primary body text */
+    --text-secondary: #8b949e; /* Subtitles, labels, secondary info */
+    --text-heading: #f0f6fc; /* Bright white for main headings */
 
-    --font-family-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-        Roboto, Helvetica, Arial, sans-serif;
+    /* Accent Colors (The "Aurora") */
+    --accent-blue: #00aaff; /* Professional & trustworthy */
+    --accent-green: #00e5a0; /* Profit, growth, final value */
+    --accent-purple: #a371f7; /* Interest, secondary data */
+    --accent-red: #f85149; /* Loss, errors */
+
+    /* UI Elements */
     --border-radius-medium: 8px;
-    --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --border-radius-large: 24px;
+    --shadow-medium: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
-/*
-   ==========================================================================
+/* ==========================================================================
    Global Resets & Body Styles
-   ==========================================================================
-*/
+   ========================================================================== */
 *,
 *::before,
 *::after {
@@ -42,11 +49,13 @@
 
 body {
     margin: 0;
-    font-family: var(--font-family-sans);
-    background-color: var(--color-background-dark);
-    color: var(--color-text-primary);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        Helvetica, Arial, sans-serif;
+    background: var(--gradient-background); /* USE THE GRADIENT */
+    color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
 }
 
 /*
@@ -74,7 +83,7 @@ button,
 input,
 textarea {
     font-family: inherit;
-    font-size: 1rem;
+    font-size: 1.05rem;
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius-medium);
     background-color: var(--color-background-card);
