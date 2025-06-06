@@ -1,10 +1,12 @@
 // src/pages/DashboardPage.tsx
-import React from "react";
-import PortfolioDetail from "../components/PortfolioDetail";
-import AddPortfolioForm from "../components/AddPortfolioForm";
-import styles from "../App.module.css"; // We can reuse some styles from App
 
-// Define the structure of a Portfolio object
+import React from "react";
+import type { User } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
+import AddPortfolioForm from "../components/AddPortfolioForm";
+import styles from "./DashboardPage.module.css";
+
+// Match the Portfolio interface from App.tsx
 interface Portfolio {
     id: string;
     name: string;
@@ -14,7 +16,7 @@ interface Portfolio {
 
 interface DashboardPageProps {
     portfolios: Portfolio[];
-    currentUser: any; // Using 'any' for simplicity, could be 'User' from firebase/auth
+    currentUser: User;
     onPortfolioAdded: () => void;
 }
 
@@ -23,42 +25,37 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     currentUser,
     onPortfolioAdded,
 }) => {
+    const navigate = useNavigate();
+
     return (
-        <div>
-            <h2 className={styles.sectionTitle}>Mis Portafolios</h2>
+        <div className={styles.container}>
+            <h2 className={styles.pageTitle}>Dashboard</h2>
+
             {portfolios.length > 0 ? (
                 <ul className={styles.portfolioList}>
-                    {portfolios.map((portfolio) => (
-                        <li
-                            key={portfolio.id}
-                            className={styles.portfolioListItem}
-                        >
-                            <div className={styles.portfolioName}>
-                                {portfolio.name}
-                            </div>
-                            <p className={styles.portfolioDesc}>
-                                {portfolio.description || "Sin descripción"}
-                            </p>
+                    {portfolios.map((p) => (
+                        <li key={p.id} className={styles.portfolioItem}>
+                            <button
+                                className={styles.linkButton}
+                                onClick={() => navigate(`/portfolio/${p.id}`)}
+                            >
+                                {p.name}
+                            </button>
                         </li>
                     ))}
                 </ul>
             ) : (
-                <div className={styles.emptyState}>
-                    <p>No tienes portafolios creados todavía.</p>
-                </div>
+                <p className={styles.emptyText}>
+                    No tienes portafolios. Crea uno nuevo debajo.
+                </p>
             )}
 
-            <AddPortfolioForm
-                currentUser={currentUser}
-                onPortfolioAdded={onPortfolioAdded}
-            />
-
-            {portfolios.length > 0 && (
-                <PortfolioDetail
-                    portfolioId={portfolios[0].id}
+            <div className={styles.formWrapper}>
+                <AddPortfolioForm
                     currentUser={currentUser}
+                    onPortfolioAdded={onPortfolioAdded}
                 />
-            )}
+            </div>
         </div>
     );
 };

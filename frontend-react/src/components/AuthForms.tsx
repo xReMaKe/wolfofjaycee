@@ -1,12 +1,10 @@
-// frontend-react/src/components/AuthForms.tsx
+// src/components/AuthForms.tsx
 import React, { useState } from "react";
-import { auth } from "../firebase"; // Import the auth instance
+import { auth } from "../firebase";
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
 } from "firebase/auth";
-
-// STEP 1: Import the CSS Module. This 'styles' object holds all our class names.
 import styles from "./AuthForms.module.css";
 
 const AuthForms: React.FC = () => {
@@ -29,10 +27,7 @@ const AuthForms: React.FC = () => {
                 signupEmail,
                 signupPassword
             );
-            // We don't set a success message here because the app will automatically
-            // navigate the user away upon successful login.
         } catch (error: any) {
-            console.error("Error al registrar:", error);
             setSignupMessage(`Error: ${error.code}`);
         }
     };
@@ -45,16 +40,11 @@ const AuthForms: React.FC = () => {
         }
         try {
             await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
-            // No success message needed here either.
         } catch (error: any) {
-            console.error("Error al iniciar sesión:", error);
             setLoginMessage(`Error: ${error.code}`);
         }
     };
 
-    // STEP 2: We have deleted the 'inputStyle' and 'buttonStyle' constants. They are no longer needed.
-
-    // STEP 3: The JSX is now clean and uses `className` with our imported styles.
     return (
         <div className={styles.authContainer}>
             <div className={styles.formSection}>

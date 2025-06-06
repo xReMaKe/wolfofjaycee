@@ -1,4 +1,4 @@
-/* frontend-react/src/pages/PortfoliosPage.module.css */
+/* frontend-react/src/pages/DashboardPage.module.css */
 
 .container {
     max-width: 800px;
@@ -35,9 +35,12 @@
     opacity: 0.8;
 }
 
-.loadingText,
-.errorText {
+.emptyText {
     text-align: center;
+    margin-bottom: 24px;
+    color: var(--color-text-secondary, #aaa);
+}
+
+.formWrapper {
     margin-top: 32px;
-    color: var(--color-accent-red, #d73a49);
 }

@@ -1,6 +1,7 @@
 // src/App.tsx
+
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom"; // IMPORT ROUTER COMPONENTS
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import type { User } from "firebase/auth";
@@ -12,9 +13,6 @@ import { auth, db } from "./firebase";
 import AuthForms from "./components/AuthForms";
 import DashboardPage from "./pages/DashboardPage"; // IMPORT DASHBOARD
 import CalculatorPage from "./pages/CalculatorPage"; // IMPORT CALCULATOR
-import PortfoliosPage from "./pages/PortfoliosPage";
-import PortfolioDetail from "./components/PortfolioDetail";
-import { useParams, useNavigate } from "react-router-dom";
 
 import styles from "./App.module.css";
 
@@ -31,7 +29,7 @@ function App() {
     const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // This logic for auth and data fetching remains EXACTLY THE SAME
+    // Listen for auth changes
     useEffect(() => {
         const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
             setCurrentUser(user);
@@ -40,6 +38,7 @@ function App() {
         return () => unsubscribeAuth();
     }, []);
 
+    // Subscribe to this user’s portfolios in Firestore
     useEffect(() => {
         if (currentUser) {
             const q: Query = query(
@@ -49,7 +48,7 @@ function App() {
             const unsubscribeFirestore = onSnapshot(q, (snapshot) => {
                 const userPortfolios = snapshot.docs.map((doc) => ({
                     id: doc.id,
-                    ...doc.data(),
+                    ...(doc.data() as Omit<Portfolio, "id">),
                 })) as Portfolio[];
                 setPortfolios(userPortfolios);
             });
@@ -72,7 +71,6 @@ function App() {
     }
 
     return (
-        // The BrowserRouter is the top-level router component
         <BrowserRouter>
             <div className={styles.app}>
                 <header className={styles.header}>
@@ -81,16 +79,15 @@ function App() {
                     </h1>
                     {currentUser && (
                         <div className={styles.authStatus}>
-                            {/* ADD NAVIGATION LINKS */}
                             <nav>
                                 <Link
-                                    to="/portfolios"
+                                    to="/"
                                     style={{
                                         marginRight: "15px",
                                         color: "white",
                                     }}
                                 >
-                                    Mis Portafolios
+                                    Dashboard
                                 </Link>
                                 <Link
                                     to="/calculator"
@@ -117,7 +114,6 @@ function App() {
 
                 <main className={styles.mainContent}>
                     {currentUser ? (
-                        // THE ROUTER'S VIEWPORT
                         <Routes>
                             <Route
                                 path="/"

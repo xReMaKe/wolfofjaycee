@@ -4,12 +4,7 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import type { User } from "firebase/auth";
 import AddPortfolioForm from "../components/AddPortfolioForm";
-import styles from "./PortfoliosPage.module.css"; // create this CSS module
-
-interface PortfoliosPageProps {
-    currentUser: User;
-    onSelectPortfolio: (id: string) => void;
-}
+import styles from "./PortfoliosPage.module.css";
 
 interface Portfolio {
     id: string;
@@ -17,7 +12,12 @@ interface Portfolio {
     description?: string;
 }
 
-const PortfoliosPage: React.FC<PortfoliosPageProps> = ({
+interface Props {
+    currentUser: User;
+    onSelectPortfolio: (id: string) => void;
+}
+
+const PortfoliosPage: React.FC<Props> = ({
     currentUser,
     onSelectPortfolio,
 }) => {
@@ -36,13 +36,13 @@ const PortfoliosPage: React.FC<PortfoliosPageProps> = ({
                     where("userId", "==", currentUser.uid)
                 );
                 const snap = await getDocs(q);
-                const list: Portfolio[] = snap.docs.map((doc) => ({
+                const list = snap.docs.map((doc) => ({
                     id: doc.id,
                     ...(doc.data() as Omit<Portfolio, "id">),
                 }));
                 setPortfolios(list);
             } catch (e: any) {
-                console.error("Error fetching portfolios:", e);
+                console.error(e);
                 setError(e.message);
             } finally {
                 setLoading(false);
@@ -53,7 +53,6 @@ const PortfoliosPage: React.FC<PortfoliosPageProps> = ({
     }, [currentUser, refreshTrigger]);
 
     const handlePortfolioAdded = () => {
-        // Trigger a re-fetch so the new portfolio appears immediately
         setRefreshTrigger((prev) => prev + 1);
     };
 
@@ -64,7 +63,6 @@ const PortfoliosPage: React.FC<PortfoliosPageProps> = ({
     return (
         <div className={styles.container}>
             <h2 className={styles.pageTitle}>Mis Portafolios</h2>
-
             <ul className={styles.portfolioList}>
                 {portfolios.map((p) => (
                     <li key={p.id} className={styles.portfolioItem}>
@@ -78,7 +76,7 @@ const PortfoliosPage: React.FC<PortfoliosPageProps> = ({
                 ))}
             </ul>
 
-            {/** Aquí aparece el formulario “Añadir Nuevo Portafolio” **/}
+            {/* Añadir Nuevo Portafolio */}
             <AddPortfolioForm
                 currentUser={currentUser}
                 onPortfolioAdded={handlePortfolioAdded}
