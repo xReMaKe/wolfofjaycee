@@ -1,19 +1,24 @@
 // src/pages/PortfolioDetailPage.tsx
+
 import React from "react";
 import { useParams, Link } from "react-router-dom";
-import PortfolioDetail from "../components/PortfolioDetail";
+import PortfolioDetail from "../components/PortfolioDetail"; // ← this is your component
 import type { User } from "firebase/auth";
 
-interface Props {
-    currentUser: User | null;
-    portfolioId: string;
+// Only currentUser is passed in from App.tsx.
+// We’ll grab portfolioId via useParams().
+interface PortfolioDetailPageProps {
+    currentUser: User;
 }
 
-const PortfolioDetailPage: React.FC<Props> = ({ currentUser }) => {
+const PortfolioDetailPage: React.FC<PortfolioDetailPageProps> = ({
+    currentUser,
+}) => {
+    // Grab “portfolioId” from the URL /portfolio/:portfolioId
     const { portfolioId } = useParams<{ portfolioId: string }>();
 
     return (
-        <div>
+        <div style={{ padding: "20px" }}>
             <Link
                 to="/"
                 style={{
@@ -27,12 +32,13 @@ const PortfolioDetailPage: React.FC<Props> = ({ currentUser }) => {
             </Link>
 
             {currentUser && portfolioId ? (
+                // Pass both portfolioId and currentUser into the PortfolioDetail component
                 <PortfolioDetail
                     portfolioId={portfolioId}
                     currentUser={currentUser}
                 />
             ) : (
-                <p style={{ color: "white" }}>Loading portfolio data...</p>
+                <p>Cargando datos del portafolio...</p>
             )}
         </div>
     );

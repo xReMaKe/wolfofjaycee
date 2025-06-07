@@ -81,14 +81,15 @@ p {
 
 button,
 input,
+select,
 textarea {
     font-family: inherit;
     font-size: 1.05rem;
-    border: 1px solid var(--color-border);
+    padding: 12px 16px; /* A bit more padding */
+    color: var(--text-primary);
+    background-color: rgba(0, 0, 0, 0.2); /* Dark, subtle background */
+    border: 1px solid var(--glass-border); /* Use the glass border color */
     border-radius: var(--border-radius-medium);
-    background-color: var(--color-background-card);
-    color: var(--color-text-primary);
-    padding: 12px;
     transition: all 0.2s ease-in-out;
 }
 

@@ -1,22 +1,21 @@
 // src/App.tsx
-
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
-
+// Import the functions as normal "value" imports:
 import { onAuthStateChanged, signOut } from "firebase/auth";
+// Import only the User interface as a type:
 import type { User } from "firebase/auth";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
-import type { Query } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
 // Page and Component Imports
 import AuthForms from "./components/AuthForms";
-import DashboardPage from "./pages/DashboardPage"; // IMPORT DASHBOARD
-import CalculatorPage from "./pages/CalculatorPage"; // IMPORT CALCULATOR
+import DashboardPage from "./pages/DashboardPage";
+import CalculatorPage from "./pages/CalculatorPage";
+import PortfolioDetailPage from "./pages/PortfolioDetailPage"; // Ensure this import is here
 
 import styles from "./App.module.css";
 
-// Define the structure of a Portfolio object
 interface Portfolio {
     id: string;
     name: string;
@@ -29,7 +28,6 @@ function App() {
     const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Listen for auth changes
     useEffect(() => {
         const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
             setCurrentUser(user);
@@ -38,17 +36,16 @@ function App() {
         return () => unsubscribeAuth();
     }, []);
 
-    // Subscribe to this user’s portfolios in Firestore
     useEffect(() => {
         if (currentUser) {
-            const q: Query = query(
+            const q = query(
                 collection(db, "portfolios"),
                 where("userId", "==", currentUser.uid)
             );
             const unsubscribeFirestore = onSnapshot(q, (snapshot) => {
                 const userPortfolios = snapshot.docs.map((doc) => ({
                     id: doc.id,
-                    ...(doc.data() as Omit<Portfolio, "id">),
+                    ...doc.data(),
                 })) as Portfolio[];
                 setPortfolios(userPortfolios);
             });
@@ -67,7 +64,10 @@ function App() {
     };
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        // This is the "loading loop" you are seeing.
+        return (
+            <div style={{ color: "white", padding: "20px" }}>Loading...</div>
+        );
     }
 
     return (
@@ -111,7 +111,6 @@ function App() {
                         </div>
                     )}
                 </header>
-
                 <main className={styles.mainContent}>
                     {currentUser ? (
                         <Routes>
@@ -128,6 +127,14 @@ function App() {
                             <Route
                                 path="/calculator"
                                 element={<CalculatorPage />}
+                            />
+                            <Route
+                                path="/portfolio/:portfolioId"
+                                element={
+                                    <PortfolioDetailPage
+                                        currentUser={currentUser}
+                                    />
+                                }
                             />
                         </Routes>
                     ) : (

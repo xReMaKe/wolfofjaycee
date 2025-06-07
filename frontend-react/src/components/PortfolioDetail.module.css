@@ -1,11 +1,14 @@
-/* frontend-react/src/components/PortfolioDetail.module.css */
+/* src/components/PortfolioDetail.module.css */
 
+/* This is our "Glass Panel" style */
 .container {
-    padding: 24px;
-    background-color: var(--color-background-card);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-medium);
-    margin-top: 40px;
+    padding: 32px;
+    background: var(--glass-background);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-large);
+    box-shadow: var(--shadow-medium);
 }
 
 .title {
@@ -24,7 +27,8 @@
 .positionsTable td {
     padding: 12px 16px;
     text-align: left;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--glass-border);
+    color: var(--text-primary); /* Set default text color for table cells */
 }
 
 .positionsTable th {
@@ -35,31 +39,27 @@
     letter-spacing: 0.5px;
 }
 
-.positionsTable tbody tr {
-    transition: background-color 0.2s ease-in-out;
-}
-
 .positionsTable tbody tr:hover {
-    background-color: rgba(255, 255, 255, 0.03); /* Subtle hover effect */
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 .symbol {
     font-weight: 600;
-    color: var(--color-text-heading);
+    color: var(--text-heading);
 }
 
 .priceUp {
-    color: var(--color-accent-green);
+    color: var(--accent-green);
     font-weight: 500;
 }
 
 .priceDown {
-    color: var(--color-accent-red);
+    color: var(--accent-red);
     font-weight: 500;
 }
 
 .priceNeutral {
-    color: var(--color-text-primary);
+    color: var(--text-primary);
     font-weight: 500;
 }
 
@@ -68,16 +68,15 @@
 .emptyText {
     padding: 40px;
     text-align: center;
-    color: var(--color-text-secondary);
+    color: var(--text-secondary);
 }
 
 .errorText {
-    color: var(--color-accent-red);
+    color: var(--accent-red);
 }
 
-/* Add a separator for the Add Position Form below the table */
 .formSeparator {
     margin-top: 32px;
     padding-top: 32px;
-    border-top: 1px solid var(--color-border);
+    border-top: 1px solid var(--glass-border);
 }

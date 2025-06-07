@@ -1,46 +1,61 @@
-/* frontend-react/src/pages/DashboardPage.module.css */
-
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 24px;
-}
+/* src/pages/DashboardPage.module.css */
 
 .pageTitle {
-    font-size: 1.75rem;
-    margin-bottom: 16px;
-    text-align: center;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--glass-border);
+    color: var(--text-heading);
+}
+
+/* This is our new "Glass Panel" style */
+.section {
+    background: var(--glass-background);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-large);
+    padding: 32px;
+    box-shadow: var(--shadow-medium);
+    margin-bottom: 40px; /* Space between sections */
 }
 
 .portfolioList {
     list-style: none;
     padding: 0;
-    margin-bottom: 24px;
+    margin: 0;
 }
 
 .portfolioItem {
-    margin-bottom: 12px;
+    transition: background-color 0.2s ease-in-out;
+    border-radius: var(--border-radius-medium);
 }
 
-.linkButton {
-    background: none;
-    border: none;
-    color: var(--color-accent-blue, #58a6ff);
-    font-size: 1.1rem;
-    text-decoration: underline;
-    cursor: pointer;
+.portfolioItem a {
+    display: block;
+    padding: 20px;
+    text-decoration: none;
 }
 
-.linkButton:hover {
-    opacity: 0.8;
+.portfolioItem:hover {
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
-.emptyText {
+.portfolioName {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin-bottom: 4px;
+}
+
+.portfolioDesc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.emptyState {
     text-align: center;
-    margin-bottom: 24px;
-    color: var(--color-text-secondary, #aaa);
-}
-
-.formWrapper {
-    margin-top: 32px;
+    padding: 60px 40px;
+    color: var(--text-secondary);
 }
