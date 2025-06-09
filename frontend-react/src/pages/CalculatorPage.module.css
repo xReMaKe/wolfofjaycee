@@ -11,7 +11,9 @@
 .title {
     grid-column: 1 / -1; /* Make title span both columns */
     font-size: 2rem;
+    text-align: center; /* This centers the text within that span */
     font-weight: 700;
+    font-size: 2.25rem; /* Let's keep the nice large font */
     margin-bottom: 0; /* Gap will handle spacing */
     padding-bottom: 20px;
     border-bottom: 1px solid var(--color-border);

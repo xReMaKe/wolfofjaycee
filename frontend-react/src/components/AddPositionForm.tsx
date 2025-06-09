@@ -1,9 +1,11 @@
-// frontend-react/src/components/AddPositionForm.tsx
+// src/components/AddPositionForm.tsx
+
 import React, { useState } from "react";
-import { collection, addDoc } from "firebase/firestore";
+import { addDoc, collection } from "firebase/firestore";
 import { db } from "../firebase";
 import type { User } from "firebase/auth";
-import styles from "./AddPositionForm.module.css"; // Import the CSS module
+// Assuming you have styles for this form, otherwise create AddPositionForm.module.css
+import styles from "./AddPositionForm.module.css";
 
 interface AddPositionFormProps {
     portfolioId: string;
@@ -16,108 +18,115 @@ const AddPositionForm: React.FC<AddPositionFormProps> = ({
     currentUser,
     onPositionAdded,
 }) => {
+    // Use strings for form state to handle empty inputs gracefully
     const [symbol, setSymbol] = useState("");
     const [quantity, setQuantity] = useState("");
-    const [costBasisPerShare, setCostBasisPerShare] = useState("");
-    const [message, setMessage] = useState("");
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [purchasePrice, setPurchasePrice] = useState("");
+
+    const [error, setError] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
-        setMessage("");
-        setError(null);
+        setError("");
+        setSuccessMessage("");
 
-        const parsedQuantity = parseFloat(quantity);
-        const parsedCostBasis = parseFloat(costBasisPerShare);
-
-        if (
-            !symbol.trim() ||
-            isNaN(parsedQuantity) ||
-            parsedQuantity <= 0 ||
-            isNaN(parsedCostBasis) ||
-            parsedCostBasis < 0
-        ) {
-            setError(
-                "Por favor, ingresa un símbolo válido, una cantidad (>0) y un costo base (>=0)."
-            );
-            setLoading(false);
+        // --- Input Validation ---
+        if (!symbol.trim()) {
+            setError("El símbolo es obligatorio.");
             return;
         }
 
+        const numQuantity = parseFloat(quantity);
+        if (isNaN(numQuantity) || numQuantity <= 0) {
+            setError("La cantidad debe ser un número positivo.");
+            return;
+        }
+
+        // THIS IS THE KEY FIX: We now correctly parse the purchase price
+        const numPurchasePrice = parseFloat(purchasePrice);
+        if (isNaN(numPurchasePrice) || numPurchasePrice < 0) {
+            setError("El costo base debe ser un número válido.");
+            return;
+        }
+
+        setIsSubmitting(true);
+
         try {
             await addDoc(collection(db, "positions"), {
-                symbol: symbol.toUpperCase(),
-                quantity: parsedQuantity,
-                costBasisPerShare: parsedCostBasis,
+                symbol: symbol.toUpperCase().trim(),
+                quantity: numQuantity,
+                purchasePrice: numPurchasePrice, // Sending the correct, parsed number
                 portfolioId: portfolioId,
                 userId: currentUser.uid,
-                createdAt: new Date(),
             });
-            setMessage("Posición añadida exitosamente!");
+
+            // Success!
+            setSuccessMessage("¡Posición añadida exitosamente!");
+            onPositionAdded();
+
+            // Clear the form fields
             setSymbol("");
             setQuantity("");
-            setCostBasisPerShare("");
-            onPositionAdded();
-        } catch (err: any) {
-            console.error("Error al añadir posición:", err);
-            setError(`Error al añadir posición: ${err.message}`);
+            setPurchasePrice("");
+
+            // Hide success message after 3 seconds
+            setTimeout(() => setSuccessMessage(""), 3000);
+        } catch (err) {
+            console.error("Error adding position:", err);
+            setError("No se pudo añadir la posición. Inténtalo de nuevo.");
         } finally {
-            setLoading(false);
+            setIsSubmitting(false);
         }
     };
 
-    // The inline style constants have been removed.
-
     return (
-        <div>
-            <h4 className={styles.title}>Añadir Nueva Posición</h4>
-            <form onSubmit={handleSubmit} className={styles.form}>
-                <div className={styles.inputGrid}>
-                    <input
-                        type="text"
-                        placeholder="Símbolo (ej. AAPL)"
-                        value={symbol}
-                        onChange={(e) => setSymbol(e.target.value)}
-                        required
-                        className={styles.input}
-                        disabled={loading}
-                    />
-                    <input
-                        type="number"
-                        placeholder="Cantidad"
-                        value={quantity}
-                        onChange={(e) => setQuantity(e.target.value)}
-                        required
-                        min="0.000001"
-                        step="any"
-                        className={styles.input}
-                        disabled={loading}
-                    />
-                    <input
-                        type="number"
-                        placeholder="Costo Base por Acción"
-                        value={costBasisPerShare}
-                        onChange={(e) => setCostBasisPerShare(e.target.value)}
-                        required
-                        min="0"
-                        step="any"
-                        className={styles.input}
-                        disabled={loading}
-                    />
-                </div>
-                <button
-                    type="submit"
-                    className={styles.button}
-                    disabled={loading}
-                >
-                    {loading ? "Añadiendo..." : "Añadir Posición"}
-                </button>
-                {message && <p className={styles.successMessage}>{message}</p>}
+        // Use your ".form" class
+        <form onSubmit={handleSubmit} className={styles.form}>
+            <div className={styles.inputGrid}>
+                <input
+                    type="text"
+                    placeholder="Símbolo (ej. AAPL)"
+                    value={symbol}
+                    onChange={(e) => setSymbol(e.target.value)}
+                    className={styles.input}
+                />
+                <input
+                    type="number"
+                    placeholder="Cantidad"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    className={styles.input}
+                    step="any"
+                />
+                <input
+                    type="number"
+                    placeholder="Costo Base por Acción"
+                    value={purchasePrice}
+                    onChange={(e) => setPurchasePrice(e.target.value)}
+                    className={styles.input}
+                    step="any"
+                />
+            </div>
+
+            {/* Display success or error message using your ".message" classes */}
+            <div className={styles.message}>
                 {error && <p className={styles.errorMessage}>{error}</p>}
-            </form>
-        </div>
+                {successMessage && (
+                    <p className={styles.successMessage}>{successMessage}</p>
+                )}
+            </div>
+
+            {/* Use your ".button" class */}
+            <button
+                type="submit"
+                disabled={isSubmitting}
+                className={styles.button}
+            >
+                {isSubmitting ? "Añadiendo..." : "Añadir Posición"}
+            </button>
+        </form>
     );
 };
 

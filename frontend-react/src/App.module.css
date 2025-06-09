@@ -67,7 +67,7 @@
 */
 .mainContent {
     width: 100%;
-    max-width: 960px;
+    max-width: 1200px;
     margin: 40px auto;
     padding: 0 20px;
     flex-grow: 1;
@@ -125,4 +125,13 @@
     border-radius: var(--border-radius-medium);
     margin-bottom: 40px;
     color: var(--text-secondary);
+}
+
+.pageTitle {
+    font-size: 2.25rem; /* A nice, large size for a main title */
+    font-weight: 700;
+    color: var(--text-heading);
+    text-align: center; /* This is the key property */
+    margin-bottom: 40px; /* Add some space below the title */
+    width: 100%; /* Ensure it spans the full width to center correctly */
 }

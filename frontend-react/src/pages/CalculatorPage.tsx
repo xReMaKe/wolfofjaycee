@@ -108,9 +108,24 @@ const CalculatorPage: React.FC = () => {
                 </div>
             );
         }
-        return null;
     };
+    // In CalculatorPage.tsx, right before the return statement
 
+    // --- Logic to create custom, cleaner X-axis ticks ---
+    const getCustomTicks = () => {
+        if (years <= 10) return chartData.map((d) => d.year); // Show all years if 10 or less
+
+        const ticks = [0];
+        const interval = Math.ceil(years / 5); // Aim for about 5-6 ticks
+        for (let i = interval; i <= years; i += interval) {
+            ticks.push(i);
+        }
+        if (ticks[ticks.length - 1] < years) {
+            ticks.push(years); // Always include the last year
+        }
+        return ticks;
+    };
+    const customTicks = getCustomTicks();
     return (
         <div className={styles.pageContainer}>
             <h1 className={styles.title}>Calculadora de Interés Compuesto</h1>
@@ -310,6 +325,9 @@ const CalculatorPage: React.FC = () => {
                                 dataKey="year"
                                 stroke="#8b949e"
                                 tickFormatter={(tick) => `Año ${tick}`}
+                                // --- Add these two props ---
+                                ticks={customTicks}
+                                tickCount={customTicks.length}
                             />
                             <YAxis
                                 stroke="#8b949e"
