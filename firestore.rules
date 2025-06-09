@@ -2,6 +2,16 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // --- THIS IS THE NEW RULE YOU ARE ADDING ---
+    // A user can only read their OWN summary document.
+    // No one can write/update/delete it from the website, only from the backend.
+    match /user_summaries/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write, update, delete: if false; 
+    }
+    // --- END OF NEW RULE ---
+
+
     // Rules for 'portfolios' collection:
     // A user can only create a portfolio if they are authenticated.
     // A user can only read, update, or delete their OWN portfolios.

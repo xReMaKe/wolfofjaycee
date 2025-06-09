@@ -1,6 +1,7 @@
 // src/App.tsx
+import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
+import MarketingPage from "./pages/MarketingPage";
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 // Import the functions as normal "value" imports:
 import { onAuthStateChanged, signOut } from "firebase/auth";
 // Import only the User interface as a type:
@@ -112,34 +113,60 @@ function App() {
                     )}
                 </header>
                 <main className={styles.mainContent}>
-                    {currentUser ? (
-                        <Routes>
-                            <Route
-                                path="/"
-                                element={
-                                    <DashboardPage
-                                        portfolios={portfolios}
-                                        currentUser={currentUser}
-                                        onPortfolioAdded={handlePortfolioAdded}
-                                    />
-                                }
-                            />
-                            <Route
-                                path="/calculator"
-                                element={<CalculatorPage />}
-                            />
-                            <Route
-                                path="/portfolio/:portfolioId"
-                                element={
-                                    <PortfolioDetailPage
-                                        currentUser={currentUser}
-                                    />
-                                }
-                            />
-                        </Routes>
-                    ) : (
-                        <AuthForms />
-                    )}
+                    <Routes>
+                        {currentUser ? (
+                            // --- LOGGED-IN USER ROUTES ---
+                            <>
+                                {/* The main dashboard for logged-in users */}
+                                <Route
+                                    path="/dashboard"
+                                    element={
+                                        <DashboardPage
+                                            portfolios={portfolios}
+                                            currentUser={currentUser}
+                                            onPortfolioAdded={
+                                                handlePortfolioAdded
+                                            }
+                                        />
+                                    }
+                                />
+
+                                <Route
+                                    path="/calculator"
+                                    element={<CalculatorPage />}
+                                />
+
+                                <Route
+                                    path="/portfolio/:portfolioId"
+                                    element={
+                                        <PortfolioDetailPage
+                                            currentUser={currentUser}
+                                        />
+                                    }
+                                />
+
+                                {/* Any other logged-in routes go here */}
+
+                                {/* If a logged-in user tries to go to the root, send them to their dashboard */}
+                                <Route
+                                    path="*"
+                                    element={<Navigate to="/dashboard" />}
+                                />
+                            </>
+                        ) : (
+                            // --- LOGGED-OUT USER ROUTES ---
+                            <>
+                                {/* The root URL shows our new marketing page */}
+                                <Route path="/" element={<MarketingPage />} />
+
+                                {/* We can keep AuthForms on a specific route like /login */}
+                                <Route path="/login" element={<AuthForms />} />
+
+                                {/* If a logged-out user tries any other URL, send them to the marketing page */}
+                                <Route path="*" element={<Navigate to="/" />} />
+                            </>
+                        )}
+                    </Routes>
                 </main>
             </div>
         </BrowserRouter>

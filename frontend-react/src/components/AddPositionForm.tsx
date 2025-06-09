@@ -21,7 +21,7 @@ const AddPositionForm: React.FC<AddPositionFormProps> = ({
     // Use strings for form state to handle empty inputs gracefully
     const [symbol, setSymbol] = useState("");
     const [quantity, setQuantity] = useState("");
-    const [purchasePrice, setPurchasePrice] = useState("");
+    const [costBasisPerShare, setCostBasisPerShare] = useState("");
 
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
@@ -44,9 +44,9 @@ const AddPositionForm: React.FC<AddPositionFormProps> = ({
             return;
         }
 
-        // THIS IS THE KEY FIX: We now correctly parse the purchase price
-        const numPurchasePrice = parseFloat(purchasePrice);
-        if (isNaN(numPurchasePrice) || numPurchasePrice < 0) {
+        // THIS IS THE KEY FIX: We now correctly parse the cost basis per share
+        const numCostBasisPerShare = parseFloat(costBasisPerShare);
+        if (isNaN(numCostBasisPerShare) || numCostBasisPerShare < 0) {
             setError("El costo base debe ser un número válido.");
             return;
         }
@@ -57,7 +57,7 @@ const AddPositionForm: React.FC<AddPositionFormProps> = ({
             await addDoc(collection(db, "positions"), {
                 symbol: symbol.toUpperCase().trim(),
                 quantity: numQuantity,
-                purchasePrice: numPurchasePrice, // Sending the correct, parsed number
+                costBasisPerShare: numCostBasisPerShare, // Sending the correct, parsed number
                 portfolioId: portfolioId,
                 userId: currentUser.uid,
             });
@@ -69,7 +69,7 @@ const AddPositionForm: React.FC<AddPositionFormProps> = ({
             // Clear the form fields
             setSymbol("");
             setQuantity("");
-            setPurchasePrice("");
+            setCostBasisPerShare("");
 
             // Hide success message after 3 seconds
             setTimeout(() => setSuccessMessage(""), 3000);
@@ -103,8 +103,8 @@ const AddPositionForm: React.FC<AddPositionFormProps> = ({
                 <input
                     type="number"
                     placeholder="Costo Base por Acción"
-                    value={purchasePrice}
-                    onChange={(e) => setPurchasePrice(e.target.value)}
+                    value={costBasisPerShare}
+                    onChange={(e) => setCostBasisPerShare(e.target.value)}
                     className={styles.input}
                     step="any"
                 />

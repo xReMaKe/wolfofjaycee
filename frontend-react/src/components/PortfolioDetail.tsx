@@ -1,6 +1,7 @@
 // src/components/PortfolioDetail.tsx
 
 import React, { useState, useEffect } from "react";
+import { formatAsCurrency } from "@/utils/formatting";
 import {
     doc,
     getDoc,
@@ -24,7 +25,7 @@ interface Position {
     id: string;
     symbol: string;
     quantity: number;
-    purchasePrice: number;
+    costBasisPerShare: number;
 }
 interface PriceData {
     [symbol: string]: number;
@@ -95,9 +96,9 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
     };
 
     // --- Helper function for dynamic price colors based on your CSS ---
-    const getPriceClass = (currentPrice: number, purchasePrice: number) => {
-        if (currentPrice > purchasePrice) return styles.priceUp;
-        if (currentPrice < purchasePrice) return styles.priceDown;
+    const getPriceClass = (currentPrice: number, costBasisPerShare: number) => {
+        if (currentPrice > costBasisPerShare) return styles.priceUp;
+        if (currentPrice < costBasisPerShare) return styles.priceDown;
         return styles.priceNeutral;
     };
 
@@ -142,9 +143,9 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
                         const currentPrice =
                             prices[pos.symbol.toUpperCase()] || 0;
                         const currentValue = currentPrice * pos.quantity;
-                        const purchasePrice =
-                            typeof pos.purchasePrice === "number"
-                                ? pos.purchasePrice
+                        const costBasisPerShare =
+                            typeof pos.costBasisPerShare === "number"
+                                ? pos.costBasisPerShare
                                 : 0;
 
                         return (
@@ -155,17 +156,19 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
                                     </span>
                                 </td>
                                 <td>{pos.quantity}</td>
-                                <td>${purchasePrice.toFixed(2)}</td>
+                                <td>{formatAsCurrency(costBasisPerShare)}</td>
                                 <td
                                     className={getPriceClass(
                                         currentPrice,
-                                        purchasePrice
+                                        costBasisPerShare
                                     )}
                                 >
-                                    ${currentPrice.toFixed(2)}
+                                    {formatAsCurrency(currentPrice)}
                                 </td>
                                 <td>
-                                    <strong>${currentValue.toFixed(2)}</strong>
+                                    <strong>
+                                        {formatAsCurrency(currentValue)}
+                                    </strong>
                                 </td>
                             </tr>
                         );
