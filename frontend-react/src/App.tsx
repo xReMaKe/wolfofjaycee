@@ -14,7 +14,7 @@ import AuthForms from "./components/AuthForms";
 import DashboardPage from "./pages/DashboardPage";
 import CalculatorPage from "./pages/CalculatorPage";
 import PortfolioDetailPage from "./pages/PortfolioDetailPage"; // Ensure this import is here
-
+import WatchlistPage from "./pages/WatchlistPage";
 import styles from "./App.module.css";
 
 interface Portfolio {
@@ -90,6 +90,16 @@ function App() {
                                 >
                                     Dashboard
                                 </Link>
+                                {/* --- ADD NEW WATCHLIST LINK --- */}
+                                <Link
+                                    to="/watchlist"
+                                    style={{
+                                        marginRight: "15px",
+                                        color: "white",
+                                    }}
+                                >
+                                    Watchlist
+                                </Link>
                                 <Link
                                     to="/calculator"
                                     style={{
@@ -130,6 +140,14 @@ function App() {
                                         />
                                     }
                                 />
+                                <Route
+                                    path="/watchlist"
+                                    element={
+                                        <WatchlistPage
+                                            currentUser={currentUser}
+                                        />
+                                    }
+                                />
 
                                 <Route
                                     path="/calculator"
@@ -164,6 +182,7 @@ function App() {
 
                                 {/* If a logged-out user tries any other URL, send them to the marketing page */}
                                 <Route path="*" element={<Navigate to="/" />} />
+                                {/* --- ADD NEW WATCHLIST ROUTE --- */}
                             </>
                         )}
                     </Routes>

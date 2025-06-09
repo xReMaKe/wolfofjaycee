@@ -1,0 +1,64 @@
+/* src/pages/WatchlistPage.module.css */
+
+.container {
+    background: rgba(30, 30, 50, 0.3);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-large);
+    padding: 32px;
+    margin-bottom: 32px;
+}
+
+.sectionTitle {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin: 0 0 24px 0;
+}
+
+.watchlistTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.watchlistTable th,
+.watchlistTable td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.watchlistTable th {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.watchlistTable tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.priceUp {
+    color: var(--accent-green);
+    font-weight: 500;
+}
+
+.priceDown {
+    color: var(--accent-red);
+    font-weight: 500;
+}
+
+.priceNeutral {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.loadingText,
+.emptyText {
+    padding: 40px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+}

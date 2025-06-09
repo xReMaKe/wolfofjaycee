@@ -1,0 +1,30 @@
+/* src/components/AddToWatchlistForm.module.css */
+
+.form {
+    display: flex;
+    gap: 16px;
+}
+
+.input {
+    flex-grow: 1; /* Allows the input to take up available space */
+    /* Inherits global styles from index.css */
+}
+
+.button {
+    /* Inherits global styles */
+    padding: 10px 24px;
+    font-weight: 600;
+    color: #fff;
+    background-color: var(--color-accent-blue);
+    border: none;
+    white-space: nowrap; /* Prevents text wrapping */
+}
+
+.button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
+.button:not(:disabled):hover {
+    background-color: #388bfd; /* Lighter blue on hover */
+}
