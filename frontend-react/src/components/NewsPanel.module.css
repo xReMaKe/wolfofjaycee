@@ -1,0 +1,80 @@
+/* src/components/NewsPanel.module.css */
+
+/* This is the main container for the whole news feature */
+.panel {
+    /* We don't need a background here anymore, the parent container has it. */
+    /* This keeps the UI cleaner. */
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin: 0 0 24px 0;
+}
+
+/* The list of news article links */
+.newsList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 24px; /* Add space below the dropdown */
+}
+
+/* This is the individual card for EACH news article */
+.articleLink {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    padding: 20px;
+
+    /* --- NEW "SOLID GLASS" STYLE --- */
+    background-color: rgba(
+        36,
+        42,
+        62,
+        0.5
+    ); /* A slightly different, solid-looking glass */
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-medium);
+    transition: all 0.2s ease-in-out;
+}
+
+.articleLink:hover {
+    transform: translateY(-3px);
+    border-color: var(--color-accent-blue);
+    box-shadow: var(--shadow-medium);
+}
+
+.headline {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin: 0 0 12px 0;
+    line-height: 1.4;
+}
+
+.meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.source {
+    font-weight: 600;
+}
+
+.errorText,
+.loadingText,
+.emptyText {
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 20px;
+    text-align: center;
+}
+
+.errorText {
+    color: var(--accent-red);
+}

@@ -34,7 +34,7 @@ interface HistoryPoint {
 
 export const refreshData = onSchedule(
     {
-        schedule: "every 30 minutes",
+        schedule: "0,30 * * * *",
         timeoutSeconds: 300,
         memory: "512MiB",
         region: "us-central1",

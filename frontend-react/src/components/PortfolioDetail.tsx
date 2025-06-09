@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import EditPositionModal from "./EditPositionModal";
+import NewsPanel from "./NewsPanel";
 import { formatAsCurrency } from "@/utils/formatting";
 import {
     doc,
@@ -45,6 +46,10 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
     const [positions, setPositions] = useState<Position[]>([]);
     const [prices, setPrices] = useState<PriceData>({});
     const [isLoading, setIsLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<"positions" | "news">(
+        "positions"
+    );
+    const [selectedNewsSymbol, setSelectedNewsSymbol] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingPosition, setEditingPosition] = useState<Position | null>(
@@ -122,9 +127,11 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
     if (error) return <p className={styles.errorText}>{error}</p>;
 
     // --- NEW AND IMPROVED RENDER BLOCK ---
+    // --- THIS IS THE COMPLETE BLOCK TO COPY AND PASTE ---
+
     return (
         <div className={styles.container}>
-            {/* Portfolio Header */}
+            {/* Portfolio Header (no changes) */}
             {portfolio && (
                 <div>
                     <h2 className={styles.title}>{portfolio.name}</h2>
@@ -140,85 +147,167 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
                 </div>
             )}
 
-            {/* Positions Table */}
-            <h3 className={styles.title}>Positions</h3>
-            <table className={styles.positionsTable}>
-                <thead>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>Quantity</th>
-                        <th>Cost Basis</th>
-                        <th>Current Price</th>
-                        <th>Total Value</th>
-                        <th></th>{" "}
-                        {/* <-- New empty header for the edit button */}
-                    </tr>
-                </thead>
-                <tbody>
-                    {positions.map((pos) => {
-                        const currentPrice =
-                            prices[pos.symbol.toUpperCase()] || 0;
-                        const currentValue = currentPrice * pos.quantity;
-                        const costBasisPerShare =
-                            typeof pos.costBasisPerShare === "number"
-                                ? pos.costBasisPerShare
-                                : 0;
-
-                        return (
-                            <tr key={pos.id}>
-                                <td>
-                                    <span className={styles.symbol}>
-                                        {pos.symbol.toUpperCase()}
-                                    </span>
-                                </td>
-                                <td>{pos.quantity}</td>
-                                <td>{formatAsCurrency(costBasisPerShare)}</td>
-                                <td
-                                    className={getPriceClass(
-                                        currentPrice,
-                                        costBasisPerShare
-                                    )}
-                                >
-                                    {formatAsCurrency(currentPrice)}
-                                </td>
-                                <td>
-                                    <strong>
-                                        {formatAsCurrency(currentValue)}
-                                    </strong>
-                                </td>
-                                {/* --- ADD THIS NEW CELL --- */}
-                                <td>
-                                    <button
-                                        onClick={() => handleOpenEditModal(pos)}
-                                        className={styles.editButton}
-                                    >
-                                        Editar
-                                    </button>
-                                </td>
-                            </tr>
-                        );
-                    })}
-                    {/* Handle empty state inside the table */}
-                    {positions.length === 0 && (
-                        <tr>
-                            <td colSpan={5} className={styles.emptyText}>
-                                No positions added yet. Use the form below to
-                                start.
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-
-            {/* Add Position Form with Separator */}
-            <div className={styles.formSeparator}>
-                <h3 className={styles.title}>Añadir Nueva Posición</h3>
-                <AddPositionForm
-                    portfolioId={portfolioId}
-                    currentUser={currentUser}
-                    onPositionAdded={handlePositionAdded}
-                />
+            {/* --- NEW TAB NAVIGATION --- */}
+            <div className={styles.tabNav}>
+                <button
+                    className={
+                        activeTab === "positions" ? styles.activeTab : ""
+                    }
+                    onClick={() => setActiveTab("positions")}
+                >
+                    Posiciones
+                </button>
+                <button
+                    className={activeTab === "news" ? styles.activeTab : ""}
+                    onClick={() => setActiveTab("news")}
+                >
+                    Noticias
+                </button>
             </div>
+
+            {/* --- NEW CONDITIONAL CONTENT AREA --- */}
+            <div className={styles.tabContent}>
+                {/* --- POSITIONS TAB CONTENT --- */}
+                {activeTab === "positions" && (
+                    <>
+                        {/* Your existing Positions Table is now inside this tab */}
+                        <table className={styles.positionsTable}>
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Quantity</th>
+                                    <th>Cost Basis</th>
+                                    <th>Current Price</th>
+                                    <th>Total Value</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {positions.map((pos) => {
+                                    const currentPrice =
+                                        prices[pos.symbol.toUpperCase()] || 0;
+                                    const currentValue =
+                                        currentPrice * pos.quantity;
+                                    const costBasisPerShare =
+                                        typeof pos.costBasisPerShare ===
+                                        "number"
+                                            ? pos.costBasisPerShare
+                                            : 0;
+                                    return (
+                                        <tr key={pos.id}>
+                                            <td>
+                                                <span className={styles.symbol}>
+                                                    {pos.symbol.toUpperCase()}
+                                                </span>
+                                            </td>
+                                            <td>{pos.quantity}</td>
+                                            <td>
+                                                {formatAsCurrency(
+                                                    costBasisPerShare
+                                                )}
+                                            </td>
+                                            <td
+                                                className={getPriceClass(
+                                                    currentPrice,
+                                                    costBasisPerShare
+                                                )}
+                                            >
+                                                {formatAsCurrency(currentPrice)}
+                                            </td>
+                                            <td>
+                                                <strong>
+                                                    {formatAsCurrency(
+                                                        currentValue
+                                                    )}
+                                                </strong>
+                                            </td>
+                                            <td>
+                                                <button
+                                                    onClick={() =>
+                                                        handleOpenEditModal(pos)
+                                                    }
+                                                    className={
+                                                        styles.editButton
+                                                    }
+                                                >
+                                                    Editar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {positions.length === 0 && (
+                                    <tr>
+                                        <td
+                                            colSpan={6}
+                                            className={styles.emptyText}
+                                        >
+                                            No positions added yet. Use the form
+                                            below to start.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+
+                        {/* Your existing Add Position Form is also inside this tab */}
+                        <div className={styles.formSeparator}>
+                            <h3 className={styles.title}>
+                                Añadir Nueva Posición
+                            </h3>
+                            <AddPositionForm
+                                portfolioId={portfolioId}
+                                currentUser={currentUser}
+                                onPositionAdded={handlePositionAdded}
+                            />
+                        </div>
+                    </>
+                )}
+
+                {/* --- NEWS TAB CONTENT --- */}
+                {activeTab === "news" && (
+                    <div>
+                        {positions.length > 0 ? (
+                            <>
+                                <label
+                                    htmlFor="news-select"
+                                    style={{
+                                        fontWeight: "600",
+                                        marginBottom: "8px",
+                                        display: "block",
+                                    }}
+                                >
+                                    Ver noticias para:
+                                </label>
+                                <select
+                                    id="news-select"
+                                    value={selectedNewsSymbol}
+                                    onChange={(e) =>
+                                        setSelectedNewsSymbol(e.target.value)
+                                    }
+                                    className={styles.newsSymbolSelect}
+                                >
+                                    {positions.map((p) => (
+                                        <option key={p.id} value={p.symbol}>
+                                            {p.symbol.toUpperCase()}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {selectedNewsSymbol && (
+                                    <NewsPanel symbol={selectedNewsSymbol} />
+                                )}
+                            </>
+                        ) : (
+                            <p className={styles.emptyText}>
+                                Añade una posición para ver noticias.
+                            </p>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* The Edit Position Modal stays outside the tabs so it can be called from anywhere */}
             <EditPositionModal
                 isOpen={isEditModalOpen}
                 onClose={handleCloseEditModal}

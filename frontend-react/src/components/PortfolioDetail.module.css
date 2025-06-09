@@ -96,3 +96,33 @@
     background-color: var(--text-secondary);
     color: var(--color-background);
 }
+/* Add to the end of PortfolioDetail.module.css */
+
+.tabNav {
+    display: flex;
+    border-bottom: 1px solid var(--glass-border);
+    margin-bottom: 32px;
+}
+
+.tabNav button {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    top: 1px;
+}
+
+.tabNav button.activeTab {
+    color: var(--text-heading);
+    border-bottom: 2px solid var(--color-accent-purple);
+}
+
+.newsSymbolSelect {
+    /* Use your global select styles */
+    margin-bottom: 32px;
+    max-width: 300px;
+}
