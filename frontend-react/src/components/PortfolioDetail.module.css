@@ -80,3 +80,19 @@
     padding-top: 32px;
     border-top: 1px solid var(--glass-border);
 }
+/* Add to PortfolioDetail.module.css */
+.editButton {
+    background: none;
+    border: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
+    padding: 4px 12px;
+    border-radius: var(--border-radius-medium);
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+}
+
+.editButton:hover {
+    background-color: var(--text-secondary);
+    color: var(--color-background);
+}

@@ -65,10 +65,12 @@ export const refreshData = onSchedule(
                 logger.info("No symbols to process. Job complete.");
                 return;
             }
-            logger.info(`Found ${uniqueSymbols.length} total unique symbols.`);
+            logger.info(
+                `Found ${uniqueSymbols.length} total unique symbols to fetch.`
+            );
 
             // --- PART 2: Fetch quotes from Finnhub ---
-            const quotes: { [symbol: string]: FinnhubQuote } = {}; // Use the correct type
+            const quotes: { [symbol: string]: FinnhubQuote } = {};
             for (const symbol of uniqueSymbols) {
                 try {
                     const url = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${finnhubKey}`;
@@ -124,38 +126,63 @@ export const refreshData = onSchedule(
                     pos.symbol &&
                     typeof pos.quantity === "number"
                 ) {
-                    // CORRECTED: Get the price 'c' from the quote object
-                    const currentPrice =
-                        quotes[pos.symbol.toUpperCase()]?.c || 0;
+                    const symbol = pos.symbol.toUpperCase();
+                    const quantity = pos.quantity;
+                    const currentPrice = quotes[symbol]?.c || 0;
                     if (userSummaries[pos.userId] !== undefined) {
-                        userSummaries[pos.userId] +=
-                            pos.quantity * currentPrice;
+                        userSummaries[pos.userId] += quantity * currentPrice;
                     }
                 }
             });
+            logger.info("FINISHED CALCULATION. Final summary values:", {
+                userSummaries,
+            });
 
-            // --- PART 5: Write summaries and history to Firestore ---
+            // --- PART 5 (RE-ARCHITECTED FOR RELIABILITY) ---
             const summaryBatch = db.batch();
             const now = admin.firestore.Timestamp.now();
 
             for (const userId in userSummaries) {
-                const summaryRef = db.collection("user_summaries").doc(userId);
-                const newTotalValue = userSummaries[userId];
-                const newHistoryPoint: HistoryPoint = {
-                    timestamp: now,
-                    value: newTotalValue,
-                };
-                const updatePayload = {
-                    totalValue: newTotalValue,
-                    lastUpdated: now,
-                    history:
-                        admin.firestore.FieldValue.arrayUnion(newHistoryPoint),
-                };
-                summaryBatch.set(summaryRef, updatePayload, { merge: true });
+                try {
+                    const summaryRef = db
+                        .collection("user_summaries")
+                        .doc(userId);
+                    const newTotalValue = userSummaries[userId];
+                    const docSnap = await summaryRef.get();
+                    let existingHistory: HistoryPoint[] = docSnap.exists
+                        ? docSnap.data()?.history || []
+                        : [];
+
+                    const newHistoryPoint: HistoryPoint = {
+                        timestamp: now,
+                        value: newTotalValue,
+                    };
+                    let newHistory = [...existingHistory, newHistoryPoint];
+
+                    if (newHistory.length > 48) {
+                        newHistory = newHistory.slice(newHistory.length - 48);
+                    }
+
+                    const updatePayload = {
+                        totalValue: newTotalValue,
+                        lastUpdated: now,
+                        history: newHistory,
+                    };
+
+                    summaryBatch.set(summaryRef, updatePayload, {
+                        merge: true,
+                    });
+                } catch (userSummaryError) {
+                    logger.error(
+                        `Failed to process summary for user ${userId}`,
+                        { userSummaryError }
+                    );
+                }
             }
+
             await summaryBatch.commit();
             logger.info(
-                `Updated summaries for ${
+                `Successfully batched summary updates for ${
                     Object.keys(userSummaries).length
                 } users.`
             );

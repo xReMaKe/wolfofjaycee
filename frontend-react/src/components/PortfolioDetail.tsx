@@ -1,6 +1,7 @@
 // src/components/PortfolioDetail.tsx
 
 import React, { useState, useEffect } from "react";
+import EditPositionModal from "./EditPositionModal";
 import { formatAsCurrency } from "@/utils/formatting";
 import {
     doc,
@@ -45,6 +46,10 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
     const [prices, setPrices] = useState<PriceData>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingPosition, setEditingPosition] = useState<Position | null>(
+        null
+    );
 
     useEffect(() => {
         const portfolioRef = doc(db, "portfolios", portfolioId);
@@ -94,6 +99,15 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
             "Position added! UI will update via the snapshot listener."
         );
     };
+    const handleOpenEditModal = (position: Position) => {
+        setEditingPosition(position);
+        setIsEditModalOpen(true);
+    };
+
+    const handleCloseEditModal = () => {
+        setIsEditModalOpen(false);
+        setEditingPosition(null);
+    };
 
     // --- Helper function for dynamic price colors based on your CSS ---
     const getPriceClass = (currentPrice: number, costBasisPerShare: number) => {
@@ -136,6 +150,8 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
                         <th>Cost Basis</th>
                         <th>Current Price</th>
                         <th>Total Value</th>
+                        <th></th>{" "}
+                        {/* <-- New empty header for the edit button */}
                     </tr>
                 </thead>
                 <tbody>
@@ -170,6 +186,15 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
                                         {formatAsCurrency(currentValue)}
                                     </strong>
                                 </td>
+                                {/* --- ADD THIS NEW CELL --- */}
+                                <td>
+                                    <button
+                                        onClick={() => handleOpenEditModal(pos)}
+                                        className={styles.editButton}
+                                    >
+                                        Editar
+                                    </button>
+                                </td>
                             </tr>
                         );
                     })}
@@ -194,6 +219,11 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
                     onPositionAdded={handlePositionAdded}
                 />
             </div>
+            <EditPositionModal
+                isOpen={isEditModalOpen}
+                onClose={handleCloseEditModal}
+                position={editingPosition}
+            />
         </div>
     );
 };

@@ -1,0 +1,103 @@
+/* src/components/EditPositionModal.module.css */
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(10, 10, 20, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    animation: fadeIn 0.3s forwards;
+}
+
+.modal {
+    background-color: #202438;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--border-radius-large);
+    padding: 32px;
+    box-shadow: var(--shadow-large);
+    width: 100%;
+    max-width: 500px;
+    transform: scale(0.95);
+    animation: scaleIn 0.3s forwards cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 24px 0;
+}
+
+.formGroup {
+    margin-bottom: 20px;
+}
+
+.formGroup label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+}
+
+.formGroup input {
+    /* This assumes you have global input styles */
+    width: 100%;
+}
+
+.buttonGroup {
+    margin-top: 32px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+}
+
+.cancelButton,
+.saveButton {
+    /* Inherits global button styles */
+    padding: 10px 20px;
+    font-weight: 600;
+    border: none;
+}
+
+.cancelButton {
+    background-color: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--text-primary);
+}
+.cancelButton:hover {
+    background-color: var(--color-border);
+}
+
+.saveButton {
+    background-color: var(--color-accent-purple);
+    color: #fff;
+}
+.saveButton:hover {
+    background-color: #b38eff;
+}
+
+.error {
+    color: var(--accent-red);
+    text-align: center;
+    margin-top: 16px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
+}
+@keyframes scaleIn {
+    to {
+        transform: scale(1);
+    }
+}
