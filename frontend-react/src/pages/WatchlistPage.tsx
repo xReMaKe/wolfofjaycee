@@ -9,7 +9,8 @@ import {
     collection,
     query,
     where,
-    getDocs,
+    updateDoc,
+    arrayRemove,
 } from "firebase/firestore";
 
 import styles from "./WatchlistPage.module.css";
@@ -24,10 +25,25 @@ interface PriceData {
 
 const WatchlistPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
     const [symbols, setSymbols] = useState<string[]>([]);
+
     const [priceData, setPriceData] = useState<{ [symbol: string]: PriceData }>(
         {}
     );
     const [isLoading, setIsLoading] = useState(true);
+    const handleRemoveSymbol = async (symbolToRemove: string) => {
+        if (!currentUser) return; // Safety check
+
+        const watchlistRef = doc(db, "watchlists", currentUser.uid);
+
+        try {
+            // Use updateDoc and arrayRemove to pull the specific symbol from the 'symbols' array
+            await updateDoc(watchlistRef, {
+                symbols: arrayRemove(symbolToRemove),
+            });
+        } catch (error) {
+            console.error("Error removing symbol from watchlist: ", error);
+        }
+    };
 
     // Effect to get the user's list of watched symbols
     useEffect(() => {
@@ -168,7 +184,16 @@ const WatchlistPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                             </>
                                         )}
                                         <td>
-                                            {/* Delete button will go here */}
+                                            <button
+                                                onClick={() =>
+                                                    handleRemoveSymbol(symbol)
+                                                }
+                                                className={styles.deleteButton} // You will need to style this
+                                                title={`Remove ${symbol}`}
+                                            >
+                                                ×{" "}
+                                                {/* This is a nice 'X' character for a close button */}
+                                            </button>
                                         </td>
                                         <td></td>
                                     </tr>

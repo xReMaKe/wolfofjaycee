@@ -74,7 +74,7 @@ const PortfolioSummaryCard: React.FC<PortfolioSummaryCardProps> = ({
     const changeClass =
         changeValue >= 0 ? styles.changePositive : styles.changeNegative;
 
-    const CustomTooltip = ({ active, payload, _label }: any) => {
+    const CustomTooltip = ({ active, payload }: any) => {
         if (active && payload && payload.length) {
             const dataPoint = payload[0].payload;
 
