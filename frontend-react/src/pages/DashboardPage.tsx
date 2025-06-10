@@ -1,16 +1,16 @@
 // src/pages/DashboardPage.tsx
 
-import React, { useState, useEffect } from "react"; // <-- Added useState, useEffect
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import type { User } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore"; // <-- Added Firestore imports
-import { db } from "../firebase"; // <-- Added db import
+import { doc, onSnapshot, collection, query, where } from "firebase/firestore";
+import { db } from "../firebase";
+import { useAuth } from "@/contexts/AuthContext"; // <-- Import the hook
 
 import AddPortfolioForm from "../components/AddPortfolioForm";
-import PortfolioSummaryCard from "../components/PortfolioSummaryCard"; // <-- Import new component
+import PortfolioSummaryCard from "../components/PortfolioSummaryCard";
 import styles from "./DashboardPage.module.css";
 
-// Your interfaces are perfect, no change needed
+// Interface for Portfolio remains the same
 interface Portfolio {
     id: string;
     name: string;
@@ -18,59 +18,77 @@ interface Portfolio {
     userId: string;
 }
 
-interface DashboardPageProps {
-    portfolios: Portfolio[];
-    currentUser: User;
-    onPortfolioAdded: () => void;
-}
+// No more DashboardPageProps! The component is self-sufficient.
 
-const DashboardPage: React.FC<DashboardPageProps> = ({
-    portfolios,
-    currentUser,
-    onPortfolioAdded,
-}) => {
-    // --- NEW LOGIC ---
-    // State to hold the summary data fetched from Firestore
+const DashboardPage: React.FC = () => {
+    // Get the current user from our Auth context
+    const { currentUser } = useAuth();
+
+    // All state is now managed inside the component
     const [totalValue, setTotalValue] = useState<number>(0);
     const [history, setHistory] = useState([]);
     const [isLoadingSummary, setIsLoadingSummary] = useState(true);
+    const [portfolios, setPortfolios] = useState<Portfolio[]>([]); // <-- State for portfolios
+    const [isLoadingPortfolios, setIsLoadingPortfolios] = useState(true); // <-- Loading state for portfolios
 
-    // useEffect to listen for real-time updates to the user's summary
+    // Effect for user summary data (your existing logic, just depends on the new currentUser)
     useEffect(() => {
         if (!currentUser) return;
-
+        setIsLoadingSummary(true);
         const summaryDocRef = doc(db, "user_summaries", currentUser.uid);
         const unsubscribe = onSnapshot(summaryDocRef, (doc) => {
             if (doc.exists()) {
                 const data = doc.data();
-
-                setTotalValue(doc.data().totalValue || 0);
+                setTotalValue(data.totalValue || 0);
                 setHistory(data.history || []);
             }
             setIsLoadingSummary(false);
         });
-
         return () => unsubscribe();
     }, [currentUser]);
-    // --- END OF NEW LOGIC ---
+
+    // NEW Effect to fetch the list of portfolios (moved from App.tsx)
+    useEffect(() => {
+        if (!currentUser) return;
+        setIsLoadingPortfolios(true);
+        const q = query(
+            collection(db, "portfolios"),
+            where("userId", "==", currentUser.uid)
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const userPortfolios = snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as Portfolio[];
+            setPortfolios(userPortfolios);
+            setIsLoadingPortfolios(false);
+        });
+        return () => unsubscribe();
+    }, [currentUser]);
+
+    if (!currentUser) {
+        // This will only show for a split second
+        return <div>Loading...</div>;
+    }
+
+    // The onPortfolioAdded prop is no longer needed since the onSnapshot listener
+    // will automatically update the UI when a new portfolio is added.
 
     return (
         <div>
-            {/* Using your existing .pageTitle class */}
             <h1 className={styles.pageTitle}>Dashboard</h1>
 
-            {/* Render our new Summary Card at the top */}
             <PortfolioSummaryCard
                 totalValue={totalValue}
                 history={history}
                 isLoading={isLoadingSummary}
             />
 
-            {/* Section for Listing Portfolios (using your existing code) */}
             <div className={styles.section}>
-                {/* Using your existing .portfolioName for the section title */}
                 <h2 className={styles.portfolioName}>Mis Portafolios</h2>
-                {portfolios.length > 0 ? (
+                {isLoadingPortfolios ? (
+                    <p>Cargando portafolios...</p>
+                ) : portfolios.length > 0 ? (
                     <ul className={styles.portfolioList}>
                         {portfolios.map((portfolio) => (
                             <li
@@ -96,15 +114,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 )}
             </div>
 
-            {/* Section for the Add Portfolio Form (using your existing code) */}
             <div className={styles.section}>
-                {/* I'm adding a title here for consistency */}
                 <h2 className={styles.portfolioName}>
                     Añadir Nuevo Portafolio
                 </h2>
+                {/* AddPortfolioForm now only needs the currentUser */}
                 <AddPortfolioForm
                     currentUser={currentUser}
-                    onPortfolioAdded={onPortfolioAdded}
+                    onPortfolioAdded={() => {}}
                 />
             </div>
         </div>

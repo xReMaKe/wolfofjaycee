@@ -2,23 +2,21 @@
 
 import React from "react";
 import { useParams, Link } from "react-router-dom";
-import PortfolioDetail from "../components/PortfolioDetail"; // ← This now points to our fixed component
-import type { User } from "firebase/auth";
+import PortfolioDetail from "../components/PortfolioDetail";
+import { useAuth } from "@/contexts/AuthContext"; // <-- Import the hook
 
-interface PortfolioDetailPageProps {
-    currentUser: User;
-}
+// No more PortfolioDetailPageProps!
 
-const PortfolioDetailPage: React.FC<PortfolioDetailPageProps> = ({
-    currentUser,
-}) => {
+const PortfolioDetailPage: React.FC = () => {
+    // Get the user from the context
+    const { currentUser } = useAuth();
     // Grab “portfolioId” from the URL, e.g., /portfolio/some-id-from-firestore
     const { portfolioId } = useParams<{ portfolioId: string }>();
 
     return (
         <div style={{ padding: "20px" }}>
             <Link
-                to="/"
+                to="/dashboard" // Changed this to /dashboard to avoid redirect loop
                 style={{
                     color: "var(--accent-blue)",
                     marginBottom: "24px",

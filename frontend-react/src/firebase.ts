@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 
 // DEBUG: log env values
 console.log("FIREBASE_API_KEY:", import.meta.env.VITE_FIREBASE_API_KEY);
@@ -23,5 +24,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+export const functions = getFunctions(app);
 
 export { app, auth, db };

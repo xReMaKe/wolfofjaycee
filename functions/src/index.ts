@@ -199,3 +199,160 @@ export const refreshData = onSchedule(
         }
     }
 );
+// PASTE THIS ENTIRE CORRECTED BLOCK INTO functions/src/index.ts
+
+// --- Additional Imports for Stripe ---
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onRequest } from "firebase-functions/v2/https";
+import Stripe from "stripe";
+
+// --- Lazy-Initialized Stripe Client ---
+// We declare the variable here, but we will initialize it INSIDE the functions.
+let stripe: Stripe;
+
+// Helper function to initialize Stripe only when needed.
+const getStripeClient = () => {
+    if (!stripe) {
+        logger.info("Initializing Stripe client.");
+        // The '!' tells TypeScript we are certain this env var will exist at runtime.
+        stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+            apiVersion: "2025-05-28.basil", // The version that worked for you
+        });
+    }
+    return stripe;
+};
+
+/**
+ * Creates a Stripe Checkout session for a user to upgrade to premium.
+ */
+export const createCheckoutSession = onCall(
+    {
+        secrets: ["STRIPE_SECRET_KEY"], // Declare that this function needs the secret
+        cors: [/localhost:\d+$/, "https://financeproject-72a60.web.app"],
+    },
+
+    async (request) => {
+        if (!request.auth) {
+            throw new HttpsError(
+                "unauthenticated",
+                "You must be logged in to upgrade."
+            );
+        }
+        const userId = request.auth.uid;
+        const userEmail = request.auth.token.email;
+        const stripeClient = getStripeClient(); // Initialize Stripe on first call
+
+        logger.info(`Creating checkout session for user: ${userId}`);
+
+        try {
+            const session = await stripeClient.checkout.sessions.create({
+                payment_method_types: ["card"],
+                mode: "subscription",
+                customer_email: userEmail,
+                line_items: [
+                    {
+                        price: "price_1RYNhAJSzAf30F8KYYJ2CMXv", // IMPORTANT: Replace
+                        quantity: 1,
+                    },
+                ],
+                client_reference_id: userId,
+                success_url:
+                    "https://financeproject-72a60.web.app/dashboard?upgraded=true", // Example domain
+                cancel_url:
+                    "https://financeproject-72a60.web.app/dashboard?cancelled=true", // Example domain
+            });
+
+            if (!session.url) {
+                throw new HttpsError(
+                    "internal",
+                    "Could not create a checkout session."
+                );
+            }
+            return { url: session.url };
+        } catch (err: any) {
+            logger.error("Stripe error", {
+                type: err.type,
+                code: err.code,
+                message: err.message,
+                raw: err.raw, // full API response from Stripe
+            });
+            throw new HttpsError("internal", "Stripe checkout failed");
+        }
+        // } catch (error) {
+        //     logger.error("Stripe session creation failed:", { error });
+        //     throw new HttpsError(
+        //         "internal",
+        //         "An error occurred with our payment provider."
+        //     );
+        // }
+    }
+);
+
+/**
+ * Listens for webhook events from Stripe to fulfill purchases.
+ */
+export const stripeWebhook = onRequest(
+    { secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"] }, // Declare secrets
+    async (request, response) => {
+        const stripeClient = getStripeClient(); // Initialize Stripe on first call
+        const signature = request.headers["stripe-signature"] as string;
+        // The webhook secret is now guaranteed to exist here.
+        const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+
+        let event: Stripe.Event;
+
+        try {
+            event = stripeClient.webhooks.constructEvent(
+                request.rawBody,
+                signature,
+                webhookSecret
+            );
+        } catch (err: any) {
+            logger.error("⚠️ Webhook signature verification failed.", {
+                error: err.message,
+            });
+            response.status(400).send(`Webhook Error: ${err.message}`);
+            return;
+        }
+
+        if (event.type === "checkout.session.completed") {
+            const session = event.data.object as Stripe.Checkout.Session;
+            const userId = session.client_reference_id;
+
+            if (!userId) {
+                logger.error(
+                    "Webhook received with no client_reference_id (userId).",
+                    { session }
+                );
+                response.status(400).send("Error: Missing user ID.");
+                return;
+            }
+
+            logger.info(
+                `✅ Payment successful for user: ${userId}. Upgrading to premium.`
+            );
+            try {
+                const userSummaryRef = db
+                    .collection("user_summaries")
+                    .doc(userId);
+                await userSummaryRef.set(
+                    {
+                        subscriptionTier: "premium",
+                        stripeCustomerId: session.customer,
+                    },
+                    { merge: true }
+                );
+                logger.info(
+                    `User ${userId} successfully upgraded in Firestore.`
+                );
+            } catch (dbError) {
+                logger.error("Firestore update failed after payment.", {
+                    userId,
+                    dbError,
+                });
+            }
+        }
+
+        response.status(200).send({ received: true });
+    }
+);

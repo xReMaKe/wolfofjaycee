@@ -1,7 +1,7 @@
 // src/pages/WatchlistPage.tsx
 
 import React, { useState, useEffect } from "react";
-import type { User } from "firebase/auth";
+// import type { User } from "firebase/auth"; // <--- CHANGE 1: We no longer need the 'User' type here directly
 import { db } from "../firebase";
 import {
     doc,
@@ -13,9 +13,11 @@ import {
     arrayRemove,
 } from "firebase/firestore";
 
+import { useAuth } from "@/contexts/AuthContext"; // <--- CHANGE 2: Import our new hook
+
 import styles from "./WatchlistPage.module.css";
 import appStyles from "../App.module.css";
-import AddToWatchlistForm from "@/components/AddToWatchlistForm"; // We will create this next
+import AddToWatchlistForm from "@/components/AddToWatchlistForm";
 
 interface PriceData {
     price: number;
@@ -23,20 +25,22 @@ interface PriceData {
     percent_change: number;
 }
 
-const WatchlistPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
-    const [symbols, setSymbols] = useState<string[]>([]);
+// <--- CHANGE 3: Remove the props from the component definition
+const WatchlistPage: React.FC = () => {
+    const { currentUser } = useAuth(); // <--- CHANGE 4: Get the user from the context hook
 
+    const [symbols, setSymbols] = useState<string[]>([]);
     const [priceData, setPriceData] = useState<{ [symbol: string]: PriceData }>(
         {}
     );
     const [isLoading, setIsLoading] = useState(true);
+
     const handleRemoveSymbol = async (symbolToRemove: string) => {
-        if (!currentUser) return; // Safety check
+        if (!currentUser) return;
 
         const watchlistRef = doc(db, "watchlists", currentUser.uid);
 
         try {
-            // Use updateDoc and arrayRemove to pull the specific symbol from the 'symbols' array
             await updateDoc(watchlistRef, {
                 symbols: arrayRemove(symbolToRemove),
             });
@@ -45,20 +49,21 @@ const WatchlistPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
         }
     };
 
-    // Effect to get the user's list of watched symbols
     useEffect(() => {
+        // This effect now depends on 'currentUser' from the hook
+        if (!currentUser) return; // Add a guard clause
+
         const watchlistDocRef = doc(db, "watchlists", currentUser.uid);
         const unsubscribe = onSnapshot(watchlistDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 setSymbols(docSnap.data().symbols || []);
             } else {
-                setSymbols([]); // User has no watchlist yet
+                setSymbols([]);
             }
         });
         return () => unsubscribe();
-    }, [currentUser.uid]);
+    }, [currentUser]); // Depend on the whole currentUser object now
 
-    // Effect to get the prices for the symbols in the watchlist
     useEffect(() => {
         if (symbols.length === 0) {
             setIsLoading(false);
@@ -90,12 +95,19 @@ const WatchlistPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
         return styles.priceNeutral;
     };
 
+    // Add a loading/null check for the user.
+    // Since this is a protected route, it will only flash briefly.
+    if (!currentUser) {
+        return <div>Loading user data...</div>;
+    }
+
     return (
         <div>
             <h1 className={appStyles.pageTitle}>Mi Watchlist</h1>
 
             <div className={styles.container}>
                 <h2 className={styles.sectionTitle}>Añadir Símbolo</h2>
+                {/* We still need to pass currentUser to components that need it */}
                 <AddToWatchlistForm
                     currentUser={currentUser}
                     currentSymbols={symbols}
@@ -104,6 +116,7 @@ const WatchlistPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
 
             <div className={styles.container}>
                 <table className={styles.watchlistTable}>
+                    {/* ... rest of your JSX table code is IDENTICAL and does not need to change ... */}
                     <thead>
                         <tr>
                             <th>Símbolo</th>
@@ -142,7 +155,6 @@ const WatchlistPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                         </td>
                                         {data ? (
                                             <>
-                                                {/* This block only renders if price data EXISTS for the symbol */}
                                                 <td>
                                                     $
                                                     {(data.price || 0).toFixed(
@@ -171,7 +183,6 @@ const WatchlistPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                             </>
                                         ) : (
                                             <>
-                                                {/* This block renders if data is NOT YET available */}
                                                 <td
                                                     colSpan={3}
                                                     style={{
@@ -188,11 +199,10 @@ const WatchlistPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                                 onClick={() =>
                                                     handleRemoveSymbol(symbol)
                                                 }
-                                                className={styles.deleteButton} // You will need to style this
+                                                className={styles.deleteButton}
                                                 title={`Remove ${symbol}`}
                                             >
-                                                ×{" "}
-                                                {/* This is a nice 'X' character for a close button */}
+                                                ×
                                             </button>
                                         </td>
                                         <td></td>

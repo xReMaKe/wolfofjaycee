@@ -1,50 +1,51 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- THIS IS THE NEW RULE YOU ARE ADDING ---
-    // A user can only read their OWN summary document.
-    // No one can write/update/delete it from the website, only from the backend.
+    // A user can read their OWN summary document (for the dashboard, subscription status, etc.)
+    // A user can UPDATE their summary document ONLY IF they are not changing protected fields
+    // like 'subscriptionTier' or 'totalValue'. This allows for future user settings.
+    // The backend function, which has admin privileges, bypasses these rules.
     match /user_summaries/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write, update, delete: if false; 
+      allow get: if request.auth != null && request.auth.uid == userId;
+
+      // This is the key security rule. It allows a user to update their doc
+      // in the future (e.g., for profile settings), but PREVENTS them
+      // from giving themselves a premium subscription.
+      allow update: if request.auth != null && request.auth.uid == userId
+                    && request.resource.data.subscriptionTier == resource.data.subscriptionTier;
+
+      // Clients cannot create or delete their own summary docs.
+      allow create, delete: if false;
     }
-    // --- END OF NEW RULE ---
 
-   // A user can read and write to their OWN watchlist document
-   match /watchlists/{userId} {
-     allow read, write: if request.auth != null && request.auth.uid == userId;
-   }
+    // A user can manage their own watchlist.
+    match /watchlists/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
 
-    // Rules for 'portfolios' collection:
-    // A user can only create a portfolio if they are authenticated.
-    // A user can only read, update, or delete their OWN portfolios.
+    // A user can only access portfolios they own.
     match /portfolios/{portfolioId} {
       allow create: if request.auth != null;
       allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
-    // Rules for 'positions' collection:
-    // A user can only create a position if they are authenticated.
-    // A user can only read, update, or delete their OWN positions.
-    // This assumes 'positions' documents will also have a 'userId' field matching the portfolio's user.
+    // A user can only access positions they own.
     match /positions/{positionId} {
       allow create: if request.auth != null;
       allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
-    // Rules for 'latest_prices' collection:
-    // Anyone (authenticated or not) can read the latest prices,
-    // but only your Cloud Function (which runs as a trusted service account) can write to it.
+    // Price data is public read-only for all clients. Only backend can write.
     match /latest_prices/{symbol} {
-      allow read: if true; // Publicly readable
-      allow write: if false; // Deny all direct client writes
+      allow read: if true;
+      allow write: if false;
     }
 
-    // Rules for 'test_writes' collection (optional - you can delete this collection from console too)
-    // If you still have test_writes, deny client access. Only functions should touch this.
+    // Locked down collection.
     match /test_writes/{documentId} {
-      allow read, write: if false; // Deny all client reads/writes
+      allow read, write: if false;
     }
   }
 }

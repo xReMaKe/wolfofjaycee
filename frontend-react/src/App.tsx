@@ -1,118 +1,131 @@
 // src/App.tsx
-import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
-import MarketingPage from "./pages/MarketingPage";
-import { useState, useEffect } from "react";
-// Import the functions as normal "value" imports:
-import { onAuthStateChanged, signOut } from "firebase/auth";
-// Import only the User interface as a type:
-import type { User } from "firebase/auth";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
-import { auth, db } from "./firebase";
 
-// Page and Component Imports
+// --- React and Router Imports ---
+import {
+    BrowserRouter,
+    Routes,
+    Route,
+    NavLink,
+    Navigate,
+} from "react-router-dom";
+
+// --- Firebase Imports ---
+import { signOut } from "firebase/auth";
+import { auth, functions } from "./firebase";
+
+// --- Our Auth Context ---
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+
+// --- Page and Component Imports ---
+import MarketingPage from "./pages/MarketingPage";
 import AuthForms from "./components/AuthForms";
 import DashboardPage from "./pages/DashboardPage";
 import CalculatorPage from "./pages/CalculatorPage";
-import PortfolioDetailPage from "./pages/PortfolioDetailPage"; // Ensure this import is here
+import PortfolioDetailPage from "./pages/PortfolioDetailPage";
 import WatchlistPage from "./pages/WatchlistPage";
 import styles from "./App.module.css";
+import { httpsCallable } from "firebase/functions";
+import { useState } from "react"; // Ensure useState is imported from react
 
-interface Portfolio {
-    id: string;
-    name: string;
-    description?: string;
-    userId: string;
-}
+// No more Portfolio interface needed here.
 
-function App() {
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-            setCurrentUser(user);
-            setIsLoading(false);
-        });
-        return () => unsubscribeAuth();
-    }, []);
-
-    useEffect(() => {
-        if (currentUser) {
-            const q = query(
-                collection(db, "portfolios"),
-                where("userId", "==", currentUser.uid)
-            );
-            const unsubscribeFirestore = onSnapshot(q, (snapshot) => {
-                const userPortfolios = snapshot.docs.map((doc) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                })) as Portfolio[];
-                setPortfolios(userPortfolios);
-            });
-            return () => unsubscribeFirestore();
-        } else {
-            setPortfolios([]);
-        }
-    }, [currentUser]);
+// ==================================================================
+// This is the clean "core" of your App.
+// It has NO state of its own. It only handles layout and routing.
+// ==================================================================
+function AppCore() {
+    const { currentUser, loading } = useAuth();
+    const [isRedirecting, setIsRedirecting] = useState(false); // State for redirection visual feedback
 
     const handleLogout = () => {
         signOut(auth).catch((error) => console.error("Logout Error:", error));
     };
 
-    const handlePortfolioAdded = () => {
-        console.log("Portfolio added! UI will update automatically.");
+    const handleUpgrade = async () => {
+        if (!currentUser) {
+            console.error("User not logged in, cannot upgrade.");
+            return;
+        }
+        setIsRedirecting(true);
+
+        // We get the functions instance from our firebase.ts file
+        const createCheckout = httpsCallable(
+            functions,
+            "createCheckoutSession"
+        );
+
+        try {
+            const result: any = await createCheckout();
+            const { url } = result.data;
+            // Redirect the user to the Stripe Checkout page
+            window.location.href = url;
+        } catch (error) {
+            console.error("Could not create Stripe checkout session:", error);
+            alert(
+                "Hubo un error al iniciar el pago. Por favor, intente de nuevo."
+            );
+            setIsRedirecting(false);
+        }
     };
 
-    if (isLoading) {
-        // This is the "loading loop" you are seeing.
+    if (loading) {
         return (
-            <div style={{ color: "white", padding: "20px" }}>Loading...</div>
+            <div className={styles.loadingScreen}>
+                <img
+                    src="/jc1.png"
+                    alt="Loading..."
+                    className={styles.loadingLogo}
+                />
+            </div>
         );
     }
 
     return (
-        <BrowserRouter>
-            <div className={styles.app}>
-                <header className={styles.header}>
-                    <h1 className={styles.headerTitle}>
-                        WolfOfJayCee Finanzas
-                    </h1>
-                    {currentUser && (
-                        <div className={styles.authStatus}>
-                            <nav>
-                                <Link
-                                    to="/"
-                                    style={{
-                                        marginRight: "15px",
-                                        color: "white",
-                                    }}
-                                >
-                                    Dashboard
-                                </Link>
-                                {/* --- ADD NEW WATCHLIST LINK --- */}
-                                <Link
-                                    to="/watchlist"
-                                    style={{
-                                        marginRight: "15px",
-                                        color: "white",
-                                    }}
-                                >
-                                    Watchlist
-                                </Link>
-                                <Link
-                                    to="/calculator"
-                                    style={{
-                                        marginRight: "15px",
-                                        color: "white",
-                                    }}
-                                >
-                                    Calculadora
-                                </Link>
+        <div className={styles.app}>
+            <header className={styles.header}>
+                <div className={styles.headerInner}>
+                    <div className={styles.headerLeft}>
+                        {/* ... logo and nav links ... */}
+                        <NavLink
+                            to={currentUser ? "/dashboard" : "/"}
+                            className={styles.logoLink}
+                        >
+                            <img
+                                src="/jc1.png"
+                                alt="WolfOfJayCee Finanzas Logo"
+                                className={styles.logo}
+                            />
+                        </NavLink>
+                        {currentUser && (
+                            <nav className={styles.nav}>
+                                <NavLink to="/dashboard">Dashboard</NavLink>
+                                <NavLink to="/watchlist">Watchlist</NavLink>
+                                <NavLink to="/calculator">Calculadora</NavLink>
                             </nav>
+                        )}
+                    </div>
+                    {currentUser && (
+                        <div className={styles.headerRight}>
                             <span className={styles.welcomeMessage}>
                                 Bienvenido, {currentUser.email}
                             </span>
+
+                            {currentUser.subscriptionTier === "premium" ? (
+                                <span className={styles.premiumBadge}>
+                                    Premium
+                                </span>
+                            ) : (
+                                <button
+                                    onClick={handleUpgrade}
+                                    className={styles.upgradeButton}
+                                    disabled={isRedirecting}
+                                >
+                                    {isRedirecting
+                                        ? "Redirigiendo..."
+                                        : "Upgrade to Premium"}
+                                </button>
+                            )}
+
                             <button
                                 onClick={handleLogout}
                                 className={styles.logoutButton}
@@ -121,73 +134,58 @@ function App() {
                             </button>
                         </div>
                     )}
-                </header>
-                <main className={styles.mainContent}>
-                    <Routes>
-                        {currentUser ? (
-                            // --- LOGGED-IN USER ROUTES ---
-                            <>
-                                {/* The main dashboard for logged-in users */}
-                                <Route
-                                    path="/dashboard"
-                                    element={
-                                        <DashboardPage
-                                            portfolios={portfolios}
-                                            currentUser={currentUser}
-                                            onPortfolioAdded={
-                                                handlePortfolioAdded
-                                            }
-                                        />
-                                    }
-                                />
-                                <Route
-                                    path="/watchlist"
-                                    element={
-                                        <WatchlistPage
-                                            currentUser={currentUser}
-                                        />
-                                    }
-                                />
+                </div>
+            </header>
+            <main className={styles.mainContent}>
+                {/* ... your <Routes> component ... */}
+                <Routes>
+                    {currentUser ? (
+                        // --- LOGGED-IN USER ROUTES ---
+                        <>
+                            <Route
+                                path="/dashboard"
+                                element={<DashboardPage />}
+                            />
+                            <Route
+                                path="/watchlist"
+                                element={<WatchlistPage />}
+                            />
+                            <Route
+                                path="/calculator"
+                                element={<CalculatorPage />}
+                            />
+                            <Route
+                                path="/portfolio/:portfolioId"
+                                element={<PortfolioDetailPage />}
+                            />
+                            <Route
+                                path="*"
+                                element={<Navigate to="/dashboard" />}
+                            />
+                        </>
+                    ) : (
+                        // --- LOGGED-OUT USER ROUTES ---
+                        <>
+                            <Route path="/" element={<MarketingPage />} />
+                            <Route path="/login" element={<AuthForms />} />
+                            <Route path="*" element={<Navigate to="/" />} />
+                        </>
+                    )}
+                </Routes>
+            </main>
+        </div>
+    );
+}
 
-                                <Route
-                                    path="/calculator"
-                                    element={<CalculatorPage />}
-                                />
-
-                                <Route
-                                    path="/portfolio/:portfolioId"
-                                    element={
-                                        <PortfolioDetailPage
-                                            currentUser={currentUser}
-                                        />
-                                    }
-                                />
-
-                                {/* Any other logged-in routes go here */}
-
-                                {/* If a logged-in user tries to go to the root, send them to their dashboard */}
-                                <Route
-                                    path="*"
-                                    element={<Navigate to="/dashboard" />}
-                                />
-                            </>
-                        ) : (
-                            // --- LOGGED-OUT USER ROUTES ---
-                            <>
-                                {/* The root URL shows our new marketing page */}
-                                <Route path="/" element={<MarketingPage />} />
-
-                                {/* We can keep AuthForms on a specific route like /login */}
-                                <Route path="/login" element={<AuthForms />} />
-
-                                {/* If a logged-out user tries any other URL, send them to the marketing page */}
-                                <Route path="*" element={<Navigate to="/" />} />
-                                {/* --- ADD NEW WATCHLIST ROUTE --- */}
-                            </>
-                        )}
-                    </Routes>
-                </main>
-            </div>
+// ==================================================================
+// The top-level component remains the same.
+// ==================================================================
+function App() {
+    return (
+        <BrowserRouter>
+            <AuthProvider>
+                <AppCore />
+            </AuthProvider>
         </BrowserRouter>
     );
 }

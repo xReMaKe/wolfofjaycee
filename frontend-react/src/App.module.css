@@ -9,35 +9,85 @@
 /*
   "Glassmorphism" Header
 */
+/* In src/App.module.css */
+
+/*
+  New, Professional Header
+*/
 .header {
-    background: rgba(
-        22,
-        27,
-        34,
-        0.7
-    ); /* Use the card color with transparency */
+    background: rgba(22, 27, 34, 0.7);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px); /* For Safari */
+    -webkit-backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--color-border);
-    padding: 20px 40px;
+    padding: 0 24px; /* Use padding instead of margin for spacing */
+    height: 64px; /* A standard, clean header height */
     position: sticky;
     top: 0;
     z-index: 100;
     display: flex;
-    justify-content: space-between;
     align-items: center;
 }
 
-.headerTitle {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-heading);
+.headerInner {
+    width: 100%;
+    /* This should match your .mainContent max-width */
+    display: flex;
+    justify-content: space-between; /* This creates the space between logo/nav and user info */
+    align-items: center;
 }
 
-.authStatus {
+.headerLeft,
+.headerRight {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 24px; /* Space between items */
+}
+
+.logoLink {
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    height: 32px; /* Control the size of your logo */
+    width: auto;
+}
+
+.nav {
+    display: flex;
+    gap: 8px; /* Small gap between nav links */
+}
+
+/* This is a more robust way to style NavLinks from react-router-dom */
+.nav a {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: var(--border-radius-medium);
+    transition: all 0.2s ease;
+}
+
+.nav a:hover {
+    color: var(--text-heading);
+    background-color: var(--color-background-card);
+}
+
+/* This special class is automatically added by NavLink for the active page */
+.nav a.active {
+    color: var(--text-heading);
+    background-color: var(--color-background-card);
+}
+
+.welcomeMessage {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+/* Logout button style can remain the same */
+.logoutButton {
+    /* ... your existing logout styles ... */
 }
 
 .welcomeMessage {
@@ -127,11 +177,67 @@
     color: var(--text-secondary);
 }
 
+/* In src/App.module.css */
 .pageTitle {
-    font-size: 2.25rem; /* A nice, large size for a main title */
+    font-size: 2.25rem;
     font-weight: 700;
     color: var(--text-heading);
-    text-align: center; /* This is the key property */
-    margin-bottom: 40px; /* Add some space below the title */
-    width: 100%; /* Ensure it spans the full width to center correctly */
+    text-align: left; /* <--- THE FIX */
+    margin-bottom: 40px;
+    /* width: 100%; is fine to leave */
+}
+/* Add this to App.module.css */
+
+.loadingScreen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #121212; /* Or your main background color */
+}
+
+.loadingLogo {
+    width: 100px; /* Adjust size as needed */
+    height: auto;
+    opacity: 0.5;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+.premiumBadge {
+    background: linear-gradient(90deg, #c5a652, #e6cfa1);
+    color: #1a1a1a;
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 0.9em;
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.upgradeButton {
+    background-color: var(--accent-blue);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    margin-right: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.upgradeButton:hover {
+    background-color: #0088ff; /* A slightly lighter blue */
+    transform: translateY(-1px);
 }
