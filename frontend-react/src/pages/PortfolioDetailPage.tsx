@@ -1,6 +1,7 @@
 // src/pages/PortfolioDetailPage.tsx
 
-import React from "react";
+// Change this line in src/pages/PortfolioDetailPage.tsx
+import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { httpsCallable } from "firebase/functions";
@@ -18,19 +19,40 @@ import detailStyles from "../components/PortfolioDetail.module.css";
 const PortfolioDetailPage: React.FC = () => {
     const { currentUser } = useAuth();
     const { portfolioId } = useParams<{ portfolioId: string }>();
+    const [isUpgrading, setIsUpgrading] = useState(false); // <-- ADD THIS LINE
+
+    // IN: src/pages/PortfolioDetailPage.tsx
 
     const handleUpgrade = async () => {
-        if (!currentUser) return;
+        if (!currentUser || isUpgrading) return;
+        setIsUpgrading(true);
+
+        // Get a reference to BOTH functions
+        const migrateData = httpsCallable(
+            functions,
+            "migratePositionsToTransactions"
+        );
         const createCheckout = httpsCallable(
             functions,
             "createCheckoutSession"
         );
+
         try {
+            // --- STEP 1: Call the new migration function FIRST ---
+            console.log(
+                "Attempting to migrate legacy positions from detail page..."
+            );
+            await migrateData();
+            console.log("Migration successful, proceeding to checkout.");
+
+            // --- STEP 2: If migration succeeds, proceed to Stripe ---
             const result: any = await createCheckout();
             window.location.href = result.data.url;
         } catch (error) {
             console.error("Stripe Checkout Error:", error);
             alert("Error al iniciar el proceso de pago.");
+        } finally {
+            setIsUpgrading(false); // Stop loading state if there's an error
         }
     };
 
@@ -83,6 +105,7 @@ const PortfolioDetailPage: React.FC = () => {
                                         <button
                                             onClick={handleUpgrade}
                                             className={styles.upgradeButton}
+                                            disabled={isUpgrading}
                                         >
                                             Actualizar a Premium
                                         </button>

@@ -5,7 +5,10 @@ import { logger } from "firebase-functions/v2";
 import * as admin from "firebase-admin";
 import { defineString } from "firebase-functions/params";
 import axios from "axios";
-
+// --- Additional Imports for Stripe ---
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onRequest } from "firebase-functions/v2/https";
+import Stripe from "stripe";
 // Initialize Admin SDK once
 if (admin.apps.length === 0) {
     admin.initializeApp();
@@ -69,8 +72,10 @@ export const refreshData = onSchedule(
         try {
             // --- Fetching logic is unchanged ---
             const positionsSnapshot = await db.collection("positions").get();
+            // We only care about transactions that have not been processed yet.
             const transactionsSnapshot = await db
                 .collection("transactions")
+                .where("processedAt", "==", null)
                 .get();
             const watchlistsSnapshot = await db.collection("watchlists").get();
 
@@ -154,8 +159,9 @@ export const refreshData = onSchedule(
                 const userTransactions = allTransactions.filter(
                     (t) => t.userId === userId
                 );
+                // --- START: FINAL UNIFIED LOGIC ---
+                // This logic works for ALL users, regardless of tier or history.
 
-                // ... (The entire consolidation logic block remains the same as my last message) ...
                 const holdings: Record<
                     string,
                     {
@@ -164,7 +170,9 @@ export const refreshData = onSchedule(
                         costBasisPerShare?: number;
                     }
                 > = {};
-                // 1️⃣ seed from legacy positions
+
+                // 1. Seed the holdings from the user's current positions.
+                // This includes both stable data and new positions just added by free users.
                 userPositions.forEach((p) => {
                     const sym = p.symbol.toUpperCase();
                     holdings[sym] = {
@@ -174,7 +182,8 @@ export const refreshData = onSchedule(
                     };
                 });
 
-                // 2️⃣ fold in every transaction
+                // 2. Fold in any NEW, unprocessed transactions.
+                // This handles upgrades and new premium user activity.
                 userTransactions.forEach((tx) => {
                     const sym = tx.symbol.toUpperCase();
                     const isBuy = (tx.type ?? "buy").toLowerCase() !== "sell";
@@ -182,24 +191,26 @@ export const refreshData = onSchedule(
 
                     const curQty = holdings[sym]?.quantity || 0;
                     const curCost = holdings[sym]?.costBasisPerShare ?? 0;
-
                     const newQty = curQty + delta;
                     let newCost = curCost;
 
                     if (isBuy) {
                         const totalCostBefore = curQty * curCost;
-                        const totalCostAfter =
-                            totalCostBefore + tx.quantity * tx.pricePerShare;
-                        if (newQty > 0) newCost = totalCostAfter / newQty;
+                        const totalCostOfTx = tx.quantity * tx.pricePerShare;
+                        if (newQty > 0) {
+                            newCost =
+                                (totalCostBefore + totalCostOfTx) / newQty;
+                        }
                     }
 
                     holdings[sym] = {
                         quantity: newQty,
                         portfolioId:
                             tx.portfolioId || holdings[sym]?.portfolioId,
-                        costBasisPerShare: newCost,
+                        costBasisPerShare: newCost || 0,
                     };
                 });
+                // --- END: FINAL UNIFIED LOGIC ---
 
                 // 3️⃣ write authoritative map back + clean up
                 const needsSync =
@@ -240,9 +251,18 @@ export const refreshData = onSchedule(
                     });
 
                     // purge the processed transactions
-                    userTransactions.forEach((tx) =>
-                        b.delete(db.collection("transactions").doc(tx.id))
-                    );
+                    // Archive the processed transactions instead of deleting
+                    const processedTimestamp =
+                        admin.firestore.FieldValue.serverTimestamp();
+                    userTransactions.forEach((tx) => {
+                        const txRef = db.collection("transactions").doc(tx.id);
+                        b.update(txRef, { processedAt: processedTimestamp });
+                    });
+
+                    // --- END: NEW PRUNING LOGIC ---
+
+                    await b.commit();
+                    logger.info(`✅ holdings consolidated for ${userId}`);
 
                     await b.commit();
                     logger.info(`✅ holdings consolidated for ${userId}`);
@@ -291,11 +311,83 @@ export const refreshData = onSchedule(
         }
     }
 );
+// PASTE THIS ENTIRE FUNCTION INTO functions/src/index.ts
 
-// --- Additional Imports for Stripe ---
-import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { onRequest } from "firebase-functions/v2/https";
-import Stripe from "stripe";
+/**
+ * A callable function that migrates a user's legacy `positions`
+ * into the `transactions` collection. This is a critical one-time step
+ * performed just before a user upgrades to premium.
+ */
+export const migratePositionsToTransactions = onCall(
+    {
+        // This function doesn't need any special secrets, but it does
+        // need the user to be authenticated.
+        cors: [/localhost:\d+$/, "https://financeproject-72a60.web.app"],
+    },
+    async (request) => {
+        if (!request.auth) {
+            throw new HttpsError(
+                "unauthenticated",
+                "You must be logged in to migrate your data."
+            );
+        }
+
+        const userId = request.auth.uid;
+        logger.info(`Starting position migration for user: ${userId}`);
+
+        try {
+            const positionsSnapshot = await db
+                .collection("positions")
+                .where("userId", "==", userId)
+                .get();
+
+            if (positionsSnapshot.empty) {
+                logger.info(
+                    `User ${userId} has no positions to migrate. Exiting successfully.`
+                );
+                return { success: true, message: "No positions to migrate." };
+            }
+
+            const batch = db.batch();
+            const migrationTimestamp =
+                admin.firestore.FieldValue.serverTimestamp();
+
+            positionsSnapshot.docs.forEach((positionDoc) => {
+                const positionData = positionDoc.data();
+
+                // Create a new transaction document from the position data
+                const newTransactionData = {
+                    userId: userId,
+                    portfolioId: positionData.portfolioId,
+                    symbol: positionData.symbol,
+                    quantity: positionData.quantity,
+                    pricePerShare: positionData.costBasisPerShare || 0,
+                    type: "buy", // Assume all legacy positions are 'buy' events
+                    transactionDate: positionData.createdAt || new Date(), // Use original creation date if available
+                    processedAt: migrationTimestamp, // Mark as processed immediately
+                    notes: "Migrated from legacy positions collection.",
+                };
+
+                const newTxRef = db.collection("transactions").doc(); // Create a new doc with a unique ID
+                batch.set(newTxRef, newTransactionData);
+            });
+
+            // Commit all the changes at once. This is atomic.
+            await batch.commit();
+
+            logger.info(
+                `✅ Successfully migrated ${positionsSnapshot.size} positions to transactions for user ${userId}.`
+            );
+            return { success: true, message: "Migration successful." };
+        } catch (error) {
+            logger.error(`Migration failed for user ${userId}`, { error });
+            throw new HttpsError(
+                "internal",
+                "An error occurred during data migration. Please try again."
+            );
+        }
+    }
+);
 
 // --- Lazy-Initialized Stripe Client ---
 let stripe: Stripe;

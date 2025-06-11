@@ -41,6 +41,8 @@ function AppCore() {
         signOut(auth).catch((error) => console.error("Logout Error:", error));
     };
 
+    // IN: src/App.tsx
+
     const handleUpgrade = async () => {
         if (!currentUser) {
             console.error("User not logged in, cannot upgrade.");
@@ -48,24 +50,34 @@ function AppCore() {
         }
         setIsRedirecting(true);
 
-        // We get the functions instance from our firebase.ts file
+        // Get a reference to BOTH functions
+        const migrateData = httpsCallable(
+            functions,
+            "migratePositionsToTransactions"
+        );
         const createCheckout = httpsCallable(
             functions,
             "createCheckoutSession"
         );
 
         try {
+            // --- STEP 1: Call the new migration function FIRST ---
+            console.log("Attempting to migrate legacy positions...");
+            await migrateData();
+            console.log("Migration successful, proceeding to checkout.");
+
+            // --- STEP 2: If migration succeeds, proceed to Stripe ---
             const result: any = await createCheckout();
             const { url } = result.data;
-            // Redirect the user to the Stripe Checkout page
-            window.location.href = url;
+            window.location.href = url; // Redirect to Stripe
         } catch (error) {
-            console.error("Could not create Stripe checkout session:", error);
+            console.error("The upgrade process failed:", error);
             alert(
-                "Hubo un error al iniciar el pago. Por favor, intente de nuevo."
+                "Hubo un error al preparar tu cuenta para la actualización. Por favor, intente de nuevo."
             );
-            setIsRedirecting(false);
+            setIsRedirecting(false); // Make sure to stop loading on error
         }
+        // No finally block needed, as successful redirect means the component unmounts
     };
 
     if (loading) {
@@ -122,7 +134,7 @@ function AppCore() {
                                 >
                                     {isRedirecting
                                         ? "Redirigiendo..."
-                                        : "Upgrade to Premium"}
+                                        : "Actualizar a Premium"}
                                 </button>
                             )}
 
