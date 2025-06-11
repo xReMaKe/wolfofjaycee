@@ -2,41 +2,99 @@
 
 import React from "react";
 import { useParams, Link } from "react-router-dom";
-import PortfolioDetail from "../components/PortfolioDetail";
-import { useAuth } from "@/contexts/AuthContext"; // <-- Import the hook
+import { useAuth } from "@/contexts/AuthContext";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "@/firebase";
 
-// No more PortfolioDetailPageProps!
+// --- Component Imports ---
+import PortfolioDetail from "../components/PortfolioDetail";
+import AddPositionForm from "../components/AddPositionForm";
+import AddTransactionForm from "../components/AddTransactionForm";
+
+// --- Style Imports ---
+import styles from "./PortfolioDetailPage.module.css";
+import detailStyles from "../components/PortfolioDetail.module.css";
 
 const PortfolioDetailPage: React.FC = () => {
-    // Get the user from the context
     const { currentUser } = useAuth();
-    // Grab “portfolioId” from the URL, e.g., /portfolio/some-id-from-firestore
     const { portfolioId } = useParams<{ portfolioId: string }>();
 
+    const handleUpgrade = async () => {
+        if (!currentUser) return;
+        const createCheckout = httpsCallable(
+            functions,
+            "createCheckoutSession"
+        );
+        try {
+            const result: any = await createCheckout();
+            window.location.href = result.data.url;
+        } catch (error) {
+            console.error("Stripe Checkout Error:", error);
+            alert("Error al iniciar el proceso de pago.");
+        }
+    };
+
+    if (!currentUser) {
+        return <p>Cargando...</p>;
+    }
+
     return (
-        <div style={{ padding: "20px" }}>
-            <Link
-                to="/dashboard" // Changed this to /dashboard to avoid redirect loop
-                style={{
-                    color: "var(--accent-blue)",
-                    marginBottom: "24px",
-                    display: "inline-block",
-                    fontWeight: "600",
-                }}
-            >
+        <div className={styles.pageContainer}>
+            <Link to="/dashboard" className={styles.backLink}>
                 ← Volver al Dashboard
             </Link>
 
-            {/* If we have a user and a portfolioId from the URL, render the Detail component */}
-            {currentUser && portfolioId ? (
-                <PortfolioDetail
-                    portfolioId={portfolioId}
-                    currentUser={currentUser}
-                />
-            ) : (
-                // This will show briefly while the page loads or if the URL is wrong
-                <p>Cargando datos del portafolio...</p>
-            )}
+            <div className={detailStyles.container}>
+                {portfolioId ? (
+                    <>
+                        {/* 1. The Data Table Component */}
+                        <PortfolioDetail
+                            portfolioId={portfolioId}
+                            currentUser={currentUser}
+                        />
+
+                        {/* 2. The Form Section (inside the same container) */}
+                        <div className={styles.formSection}>
+                            {currentUser.subscriptionTier === "premium" ? (
+                                // --- VISTA PREMIUM ---
+                                <AddTransactionForm portfolioId={portfolioId} />
+                            ) : (
+                                // --- VISTA GRATIS ---
+                                <>
+                                    <h3 className={styles.formTitle}>
+                                        Añadir Nueva Posición
+                                    </h3>
+                                    <AddPositionForm
+                                        portfolioId={portfolioId}
+                                        currentUser={currentUser}
+                                        onPositionAdded={() => {}}
+                                    />
+                                    <div className={styles.upgradePrompt}>
+                                        <h3>
+                                            ¿Quieres un seguimiento más
+                                            detallado?
+                                        </h3>
+                                        <p>
+                                            Actualiza a Premium para registrar
+                                            compras, ventas, dividendos y
+                                            obtener un análisis de rendimiento
+                                            real.
+                                        </p>
+                                        <button
+                                            onClick={handleUpgrade}
+                                            className={styles.upgradeButton}
+                                        >
+                                            Actualizar a Premium
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </>
+                ) : (
+                    <p>Portafolio no especificado.</p>
+                )}
+            </div>
         </div>
     );
 };

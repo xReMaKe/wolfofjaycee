@@ -1,62 +1,86 @@
 // src/components/PortfolioDetail.tsx
 
 import React, { useState, useEffect } from "react";
-import EditPositionModal from "./EditPositionModal";
-import NewsPanel from "./NewsPanel";
-import { formatAsCurrency } from "@/utils/formatting";
 import {
-    doc,
-    getDoc,
     collection,
     query,
     where,
     onSnapshot,
+    doc,
+    getDoc,
+    QuerySnapshot, // <-- IMPORT THIS TYPE
 } from "firebase/firestore";
 import { db } from "../firebase";
-import type { User } from "firebase/auth";
-import AddPositionForm from "./AddPositionForm";
-import styles from "./PortfolioDetail.module.css"; // We are now using YOUR CSS file
+import type { AppUser } from "@/contexts/AuthContext";
+import { formatAsCurrency } from "@/utils/formatting";
+import EditPositionModal from "@/components/EditPositionModal";
+import NewsPanel from "@/components/NewsPanel";
+import styles from "./PortfolioDetail.module.css";
 
-// --- Interfaces (no changes here) ---
+// --- INTERFACES (ALL DEFINED AT THE TOP LEVEL) ---
+
 interface Portfolio {
     id: string;
     name: string;
     description?: string;
 }
-interface Position {
+
+interface PriceData {
+    [symbol: string]: number;
+}
+
+interface LegacyPosition {
     id: string;
     symbol: string;
     quantity: number;
     costBasisPerShare: number;
 }
-interface PriceData {
-    [symbol: string]: number;
+
+interface Transaction {
+    id: string;
+    symbol: string;
+    type: "buy" | "sell";
+    quantity: number;
+    pricePerShare: number;
 }
+
+// THIS IS THE CORRECT, UNIFIED INTERFACE
+interface MergedPosition {
+    symbol: string;
+    quantity: number;
+    costBasisPerShare: number;
+    totalCost: number; // Keep track of total cost for accurate averaging
+    source: "legacy" | "transaction";
+    legacyId?: string;
+}
+
 interface PortfolioDetailProps {
     portfolioId: string;
-    currentUser: User;
+    currentUser: AppUser;
 }
 
 const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
     portfolioId,
     currentUser,
 }) => {
-    // --- State and Data Fetching Logic (no changes here) ---
     const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
-    const [positions, setPositions] = useState<Position[]>([]);
-    const [prices, setPrices] = useState<PriceData>({});
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [displayPositions, setDisplayPositions] = useState<MergedPosition[]>(
+        []
+    );
+    const [prices, setPrices] = useState<PriceData>({});
     const [activeTab, setActiveTab] = useState<"positions" | "news">(
         "positions"
     );
     const [selectedNewsSymbol, setSelectedNewsSymbol] = useState("");
-    const [error, setError] = useState<string | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editingPosition, setEditingPosition] = useState<Position | null>(
-        null
-    );
+    const [editingPosition, setEditingPosition] =
+        useState<LegacyPosition | null>(null);
 
     useEffect(() => {
+        setIsLoading(true);
+
         const portfolioRef = doc(db, "portfolios", portfolioId);
         getDoc(portfolioRef).then((docSnap) => {
             if (docSnap.exists() && docSnap.data().userId === currentUser.uid) {
@@ -65,23 +89,9 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
                     ...docSnap.data(),
                 } as Portfolio);
             } else {
-                setError("Portfolio not found or you do not have permission.");
+                setError("Portafolio no encontrado o no tienes permiso.");
                 setIsLoading(false);
             }
-        });
-
-        const positionsQuery = query(
-            collection(db, "positions"),
-            where("portfolioId", "==", portfolioId),
-            where("userId", "==", currentUser.uid)
-        );
-        const unsubscribePositions = onSnapshot(positionsQuery, (snapshot) => {
-            const positionsData = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            })) as Position[];
-            setPositions(positionsData);
-            setIsLoading(false);
         });
 
         const pricesQuery = query(collection(db, "latest_prices"));
@@ -93,61 +103,131 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
             setPrices(priceData);
         });
 
+        const legacyPositionsQuery = query(
+            collection(db, "positions"),
+            where("portfolioId", "==", portfolioId),
+            where("userId", "==", currentUser.uid)
+        );
+        const transactionsQuery = query(
+            collection(db, "transactions"),
+            where("portfolioId", "==", portfolioId),
+            where("userId", "==", currentUser.uid)
+        );
+
+        // This function holds the complete logic for processing data
+        const processData = (
+            legacySnapshot: QuerySnapshot,
+            transactionsSnapshot: QuerySnapshot
+        ) => {
+            const holdings: { [symbol: string]: MergedPosition } = {};
+
+            // 1. Process legacy positions
+            legacySnapshot.forEach((doc) => {
+                const pos = doc.data() as LegacyPosition;
+                const symbol = pos.symbol.toUpperCase();
+                holdings[symbol] = {
+                    symbol: symbol,
+                    quantity: pos.quantity,
+                    costBasisPerShare: pos.costBasisPerShare,
+                    totalCost: pos.quantity * pos.costBasisPerShare,
+                    source: "legacy",
+                    legacyId: doc.id,
+                };
+            });
+
+            // 2. If premium, process and merge transactions
+            if (currentUser.subscriptionTier === "premium") {
+                transactionsSnapshot.forEach((doc) => {
+                    const tx = doc.data() as Transaction;
+                    const symbol = tx.symbol.toUpperCase();
+
+                    if (!holdings[symbol]) {
+                        holdings[symbol] = {
+                            symbol,
+                            quantity: 0,
+                            costBasisPerShare: 0,
+                            totalCost: 0,
+                            source: "transaction",
+                        };
+                    }
+
+                    const currentQuantity = holdings[symbol].quantity;
+                    const currentTotalCost = holdings[symbol].totalCost;
+
+                    if (tx.type === "buy") {
+                        const newQuantity = currentQuantity + tx.quantity;
+                        const newTotalCost =
+                            currentTotalCost + tx.quantity * tx.pricePerShare;
+                        holdings[symbol].quantity = newQuantity;
+                        holdings[symbol].totalCost = newTotalCost;
+                        holdings[symbol].costBasisPerShare =
+                            newTotalCost / newQuantity;
+                    } else if (tx.type === "sell") {
+                        holdings[symbol].quantity -= tx.quantity;
+                    }
+                    holdings[symbol].source = "transaction";
+                });
+            }
+
+            const finalPositions = Object.values(holdings).filter(
+                (p) => p.quantity > 0.00001
+            );
+            setDisplayPositions(finalPositions);
+            if (finalPositions.length > 0 && !selectedNewsSymbol) {
+                setSelectedNewsSymbol(finalPositions[0].symbol);
+            }
+        };
+
+        // Set up listeners that call the processing function
+        const unsubscribeLegacy = onSnapshot(
+            legacyPositionsQuery,
+            (legacySnapshot) => {
+                onSnapshot(transactionsQuery, (transactionsSnapshot) => {
+                    processData(legacySnapshot, transactionsSnapshot);
+                    setIsLoading(false);
+                });
+            }
+        );
+
         return () => {
-            unsubscribePositions();
+            unsubscribeLegacy();
             unsubscribePrices();
         };
-    }, [portfolioId, currentUser.uid]);
+    }, [portfolioId, currentUser.uid, currentUser.subscriptionTier]);
 
-    const handlePositionAdded = () => {
-        console.log(
-            "Position added! UI will update via the snapshot listener."
-        );
-    };
-    const handleOpenEditModal = (position: Position) => {
-        setEditingPosition(position);
+    const handleOpenEditModal = (position: MergedPosition) => {
+        if (position.source !== "legacy" || !position.legacyId) {
+            alert(
+                "Para modificar, por favor añada una nueva transacción de compra o venta."
+            );
+            return;
+        }
+        const legacyPosition: LegacyPosition = {
+            id: position.legacyId,
+            symbol: position.symbol,
+            quantity: position.quantity,
+            costBasisPerShare: position.costBasisPerShare,
+        };
+        setEditingPosition(legacyPosition);
         setIsEditModalOpen(true);
     };
 
-    const handleCloseEditModal = () => {
-        setIsEditModalOpen(false);
-        setEditingPosition(null);
-    };
-
-    // --- Helper function for dynamic price colors based on your CSS ---
-    const getPriceClass = (currentPrice: number, costBasisPerShare: number) => {
-        if (currentPrice > costBasisPerShare) return styles.priceUp;
-        if (currentPrice < costBasisPerShare) return styles.priceDown;
-        return styles.priceNeutral;
-    };
-
-    // --- Conditional Renders using your CSS classes ---
     if (isLoading)
-        return <p className={styles.loadingText}>Loading portfolio...</p>;
+        return <p className={styles.loadingText}>Cargando portafolio...</p>;
     if (error) return <p className={styles.errorText}>{error}</p>;
 
-    // --- NEW AND IMPROVED RENDER BLOCK ---
-    // --- THIS IS THE COMPLETE BLOCK TO COPY AND PASTE ---
-
     return (
-        <div className={styles.container}>
-            {/* Portfolio Header (no changes) */}
+        <>
             {portfolio && (
                 <div>
                     <h2 className={styles.title}>{portfolio.name}</h2>
-                    <p
-                        style={{
-                            marginTop: "-16px",
-                            marginBottom: "32px",
-                            color: "var(--text-secondary)",
-                        }}
-                    >
-                        {portfolio.description}
-                    </p>
+                    {portfolio.description && (
+                        <p className={styles.description}>
+                            {portfolio.description}
+                        </p>
+                    )}
                 </div>
             )}
-
-            {/* --- NEW TAB NAVIGATION --- */}
             <div className={styles.tabNav}>
                 <button
                     className={
@@ -164,118 +244,87 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
                     Noticias
                 </button>
             </div>
-
-            {/* --- NEW CONDITIONAL CONTENT AREA --- */}
             <div className={styles.tabContent}>
-                {/* --- POSITIONS TAB CONTENT --- */}
                 {activeTab === "positions" && (
-                    <>
-                        {/* Your existing Positions Table is now inside this tab */}
-                        <table className={styles.positionsTable}>
-                            <thead>
-                                <tr>
-                                    <th>Symbol</th>
-                                    <th>Quantity</th>
-                                    <th>Cost Basis</th>
-                                    <th>Current Price</th>
-                                    <th>Total Value</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {positions.map((pos) => {
-                                    const currentPrice =
-                                        prices[pos.symbol.toUpperCase()] || 0;
-                                    const currentValue =
-                                        currentPrice * pos.quantity;
-                                    const costBasisPerShare =
-                                        typeof pos.costBasisPerShare ===
-                                        "number"
-                                            ? pos.costBasisPerShare
-                                            : 0;
-                                    return (
-                                        <tr key={pos.id}>
-                                            <td>
-                                                <span className={styles.symbol}>
-                                                    {pos.symbol.toUpperCase()}
-                                                </span>
-                                            </td>
-                                            <td>{pos.quantity}</td>
-                                            <td>
+                    <table className={styles.positionsTable}>
+                        <thead>
+                            <tr>
+                                <th>Símbolo</th>
+                                <th>Cantidad</th>
+                                <th>Costo por Acción</th>
+                                <th>Precio Actual</th>
+                                <th>Valor Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {displayPositions.map((pos) => {
+                                const currentPrice =
+                                    prices[pos.symbol.toUpperCase()] || 0;
+                                return (
+                                    <tr key={pos.symbol}>
+                                        <td>
+                                            <span className={styles.symbol}>
+                                                {pos.symbol}
+                                            </span>
+                                        </td>
+                                        <td>{pos.quantity}</td>
+                                        <td>
+                                            {formatAsCurrency(
+                                                pos.costBasisPerShare
+                                            )}
+                                        </td>
+                                        <td>
+                                            {formatAsCurrency(currentPrice)}
+                                        </td>
+                                        <td>
+                                            <strong>
                                                 {formatAsCurrency(
-                                                    costBasisPerShare
+                                                    currentPrice * pos.quantity
                                                 )}
-                                            </td>
-                                            <td
-                                                className={getPriceClass(
-                                                    currentPrice,
-                                                    costBasisPerShare
-                                                )}
+                                            </strong>
+                                        </td>
+                                        <td>
+                                            <button
+                                                onClick={() =>
+                                                    handleOpenEditModal(pos)
+                                                }
+                                                className={styles.editButton}
+                                                disabled={
+                                                    pos.source === "transaction"
+                                                }
+                                                title={
+                                                    pos.source === "transaction"
+                                                        ? "Añada una transacción para modificar"
+                                                        : "Editar posición"
+                                                }
                                             >
-                                                {formatAsCurrency(currentPrice)}
-                                            </td>
-                                            <td>
-                                                <strong>
-                                                    {formatAsCurrency(
-                                                        currentValue
-                                                    )}
-                                                </strong>
-                                            </td>
-                                            <td>
-                                                <button
-                                                    onClick={() =>
-                                                        handleOpenEditModal(pos)
-                                                    }
-                                                    className={
-                                                        styles.editButton
-                                                    }
-                                                >
-                                                    Editar
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                                {positions.length === 0 && (
-                                    <tr>
-                                        <td
-                                            colSpan={6}
-                                            className={styles.emptyText}
-                                        >
-                                            No positions added yet. Use the form
-                                            below to start.
+                                                Editar
+                                            </button>
                                         </td>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
-
-                        {/* Your existing Add Position Form is also inside this tab */}
-                        <div className={styles.formSeparator}>
-                            <h3 className={styles.title}>
-                                Añadir Nueva Posición
-                            </h3>
-                            <AddPositionForm
-                                portfolioId={portfolioId}
-                                currentUser={currentUser}
-                                onPositionAdded={handlePositionAdded}
-                            />
-                        </div>
-                    </>
+                                );
+                            })}
+                            {displayPositions.length === 0 && !isLoading && (
+                                <tr>
+                                    <td
+                                        colSpan={6}
+                                        className={styles.emptyText}
+                                    >
+                                        Aún no hay posiciones.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 )}
-
-                {/* --- NEWS TAB CONTENT --- */}
                 {activeTab === "news" && (
                     <div>
-                        {positions.length > 0 ? (
+                        {displayPositions.length > 0 ? (
                             <>
                                 <label
                                     htmlFor="news-select"
-                                    style={{
-                                        fontWeight: "600",
-                                        marginBottom: "8px",
-                                        display: "block",
-                                    }}
+                                    className={styles.newsLabel}
                                 >
                                     Ver noticias para:
                                 </label>
@@ -287,13 +336,12 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
                                     }
                                     className={styles.newsSymbolSelect}
                                 >
-                                    {positions.map((p) => (
-                                        <option key={p.id} value={p.symbol}>
+                                    {displayPositions.map((p) => (
+                                        <option key={p.symbol} value={p.symbol}>
                                             {p.symbol.toUpperCase()}
                                         </option>
                                     ))}
                                 </select>
-
                                 {selectedNewsSymbol && (
                                     <NewsPanel symbol={selectedNewsSymbol} />
                                 )}
@@ -306,14 +354,12 @@ const PortfolioDetail: React.FC<PortfolioDetailProps> = ({
                     </div>
                 )}
             </div>
-
-            {/* The Edit Position Modal stays outside the tabs so it can be called from anywhere */}
             <EditPositionModal
                 isOpen={isEditModalOpen}
-                onClose={handleCloseEditModal}
+                onClose={() => setIsEditModalOpen(false)}
                 position={editingPosition}
             />
-        </div>
+        </>
     );
 };
 

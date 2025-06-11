@@ -31,7 +31,13 @@ interface HistoryPoint {
     timestamp: admin.firestore.Timestamp;
     value: number;
 }
-
+// ADD THIS NEW INTERFACE
+interface Transaction {
+    userId: string;
+    symbol: string;
+    type: "buy" | "sell"; // Starting with buy/sell for now
+    quantity: number;
+}
 export const refreshData = onSchedule(
     {
         schedule: "0,15,30,45 * * * *",
@@ -50,7 +56,13 @@ export const refreshData = onSchedule(
         try {
             // --- PART 1: Fetch all unique symbols ---
             const positionsSnapshot = await db.collection("positions").get();
+            const transactionsSnapshot = await db
+                .collection("transactions")
+                .get();
             const positionSymbols = positionsSnapshot.docs
+                .map((doc) => doc.data().symbol?.toUpperCase())
+                .filter(Boolean);
+            const transactionSymbols = transactionsSnapshot.docs
                 .map((doc) => doc.data().symbol?.toUpperCase())
                 .filter(Boolean);
             const watchlistsSnapshot = await db.collection("watchlists").get();
@@ -58,7 +70,11 @@ export const refreshData = onSchedule(
                 .flatMap((doc) => doc.data().symbols || [])
                 .map((s: string) => s.toUpperCase());
             const uniqueSymbols = [
-                ...new Set([...positionSymbols, ...watchlistSymbols]),
+                ...new Set([
+                    ...positionSymbols,
+                    ...transactionSymbols,
+                    ...watchlistSymbols,
+                ]),
             ];
 
             if (uniqueSymbols.length === 0) {
@@ -111,12 +127,12 @@ export const refreshData = onSchedule(
             const allPositions: Position[] = positionsSnapshot.docs.map(
                 (doc) => doc.data() as Position
             );
-            const userSummaries: { [userId: string]: number } = {};
+            const userSummariesLegacy: { [userId: string]: number } = {};
             const userIds = [
                 ...new Set(allPositions.map((p) => p.userId).filter(Boolean)),
             ];
             userIds.forEach((userId) => {
-                userSummaries[userId] = 0;
+                userSummariesLegacy[userId] = 0;
             });
 
             allPositions.forEach((pos) => {
@@ -129,18 +145,71 @@ export const refreshData = onSchedule(
                     const symbol = pos.symbol.toUpperCase();
                     const quantity = pos.quantity;
                     const currentPrice = quotes[symbol]?.c || 0;
-                    if (userSummaries[pos.userId] !== undefined) {
-                        userSummaries[pos.userId] += quantity * currentPrice;
+                    if (userSummariesLegacy[pos.userId] !== undefined) {
+                        userSummariesLegacy[pos.userId] +=
+                            quantity * currentPrice;
                     }
                 }
             });
-            logger.info("FINISHED CALCULATION. Final summary values:", {
-                userSummaries,
+            logger.info(
+                "LEGACY CALCULATION from 'positions' collection complete:",
+                {
+                    userSummariesLegacy,
+                }
+            );
+            // --- PATH B: The New "transactions" based calculation (PREMIUM) ---
+            const allTransactions: Transaction[] =
+                transactionsSnapshot.docs.map(
+                    (doc) => doc.data() as Transaction
+                );
+            const userHoldingsFromTx: {
+                [userId: string]: { [symbol: string]: number };
+            } = {};
+            const userSummariesPremium: { [userId: string]: number } = {};
+
+            // 1. Reconstruct current holdings from the transaction ledger
+            allTransactions.forEach((tx) => {
+                if (!tx.userId || !tx.symbol || typeof tx.quantity !== "number")
+                    return;
+
+                if (!userHoldingsFromTx[tx.userId]) {
+                    userHoldingsFromTx[tx.userId] = {};
+                    userSummariesPremium[tx.userId] = 0;
+                }
+                if (!userHoldingsFromTx[tx.userId][tx.symbol]) {
+                    userHoldingsFromTx[tx.userId][tx.symbol] = 0;
+                }
+
+                if (tx.type === "buy") {
+                    userHoldingsFromTx[tx.userId][tx.symbol] += tx.quantity;
+                } else if (tx.type === "sell") {
+                    userHoldingsFromTx[tx.userId][tx.symbol] -= tx.quantity;
+                }
             });
+
+            // 2. Calculate total portfolio value
+            for (const userId in userHoldingsFromTx) {
+                let totalValue = 0;
+                for (const symbol in userHoldingsFromTx[userId]) {
+                    const quantity = userHoldingsFromTx[userId][symbol];
+                    const currentPrice = quotes[symbol.toUpperCase()]?.c || 0;
+                    totalValue += quantity * currentPrice;
+                }
+                userSummariesPremium[userId] = totalValue;
+            }
+            logger.info(
+                "PREMIUM CALCULATION from 'transactions' collection complete:",
+                { userSummariesPremium }
+            );
+            // ===========================================================================
 
             // --- PART 5 (RE-ARCHITECTED FOR RELIABILITY) ---
             const summaryBatch = db.batch();
             const now = admin.firestore.Timestamp.now();
+            // ======================== MODIFY THIS LINE ==========================
+            // We are now explicitly using the legacy calculation result.
+            const userSummaries = userSummariesLegacy;
+            // ====================================================================
 
             for (const userId in userSummaries) {
                 try {
@@ -182,7 +251,7 @@ export const refreshData = onSchedule(
 
             await summaryBatch.commit();
             logger.info(
-                `Successfully batched summary updates for ${
+                `Successfully batched summary updates using LEGACY data for ${
                     Object.keys(userSummaries).length
                 } users.`
             );

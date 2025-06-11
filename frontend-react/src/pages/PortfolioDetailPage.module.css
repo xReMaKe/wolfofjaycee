@@ -1,0 +1,67 @@
+/* ... .pageContainer and .backLink styles remain the same ... */
+
+.formSection {
+    margin-top: 40px;
+    padding-top: 40px;
+    border-top: 1px solid var(--color-border);
+}
+
+/* New style for the title above the form */
+.formTitle {
+    font-size: 1.8rem;
+    color: var(--text-heading);
+    margin-bottom: 24px;
+}
+
+.upgradePrompt {
+    /* Use a subtle gradient for a premium feel */
+    background: linear-gradient(
+        135deg,
+        rgba(0, 123, 255, 0.05),
+        rgba(0, 123, 255, 0.02)
+    );
+
+    /* A soft, glowing border */
+    border: 1px solid rgba(0, 123, 255, 0.3);
+
+    border-radius: var(--border-radius-large);
+    padding: 32px; /* A little more padding */
+    text-align: center;
+    margin-top: 40px;
+
+    /* A subtle shadow to lift it off the page */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 123, 255, 0.1);
+
+    /* Smooth transition for hover effects if you add any */
+    transition: all 0.3s ease;
+}
+
+.upgradePrompt h3 {
+    margin-top: 0;
+    font-size: 1.5rem; /* Make the title a bit bigger */
+    color: var(--text-heading);
+    margin-bottom: 8px; /* Less space between title and text */
+}
+
+.upgradePrompt p {
+    color: var(--text-secondary);
+    max-width: 450px; /* Constrain the line length for readability */
+    margin: 0 auto 24px auto; /* Center the text block and add space below */
+    line-height: 1.6; /* Improve readability */
+}
+
+/* We already have styles for .upgradeButton, they should apply perfectly */
+
+/* ... rest of the upgrade prompt styles are fine ... */
+
+.upgradeButton {
+    background-color: var(--accent-blue);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--border-radius-medium);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-top: 16px; /* Add space above button */
+}
