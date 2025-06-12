@@ -5,11 +5,12 @@ import { Link } from "react-router-dom";
 import { doc, onSnapshot, collection, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "@/contexts/AuthContext"; // <-- Import the hook
-
+// Add this line with your other component imports, around line 9
+import PerformanceChart from "../components/charts/PerformanceChart";
 import AddPortfolioForm from "../components/AddPortfolioForm";
 import PortfolioSummaryCard from "../components/PortfolioSummaryCard";
 import styles from "./DashboardPage.module.css";
-
+import PremiumSummaryCard from "../components/PremiumSummaryCard";
 // Interface for Portfolio remains the same
 interface Portfolio {
     id: string;
@@ -78,11 +79,21 @@ const DashboardPage: React.FC = () => {
         <div>
             <h1 className={styles.pageTitle}>Dashboard</h1>
 
-            <PortfolioSummaryCard
-                totalValue={totalValue}
-                history={history}
-                isLoading={isLoadingSummary}
-            />
+            {currentUser.subscriptionTier === "premium" ? (
+                // Premium User View: The new, combined card
+                <PremiumSummaryCard
+                    totalValue={totalValue}
+                    history={history}
+                    isLoading={isLoadingSummary}
+                />
+            ) : (
+                // Free User View: The original summary card
+                <PortfolioSummaryCard
+                    totalValue={totalValue}
+                    history={history}
+                    isLoading={isLoadingSummary}
+                />
+            )}
 
             <div className={styles.section}>
                 <h2 className={styles.portfolioName}>Mis Portafolios</h2>

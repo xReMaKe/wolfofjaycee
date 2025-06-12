@@ -9,6 +9,11 @@ service cloud.firestore {
     // The backend function, which has admin privileges, bypasses these rules.
     match /user_summaries/{userId} {
       allow get: if request.auth != null && request.auth.uid == userId;
+      // --- ADD THIS NEW RULE BLOCK ---
+      match /performance_history/{docId} {
+        allow read: if request.auth.uid == userId;
+      }
+      // --- END NEW RULE BLOCK ---
 
       // This is the key security rule. It allows a user to update their doc
       // in the future (e.g., for profile settings), but PREVENTS them

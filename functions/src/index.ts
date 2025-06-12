@@ -3,7 +3,6 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { logger } from "firebase-functions/v2";
 import * as admin from "firebase-admin";
-import { defineString } from "firebase-functions/params";
 import axios from "axios";
 // --- Additional Imports for Stripe ---
 import { onCall, HttpsError } from "firebase-functions/v2/https";
@@ -16,8 +15,6 @@ if (admin.apps.length === 0) {
 const db = admin.firestore();
 
 logger.info("Function file loaded (V2).");
-
-const finnhubApiKeyParam = defineString("FINNHUB_API_KEY");
 
 // --- CORRECTED INTERFACES ---
 interface FinnhubQuote {
@@ -60,10 +57,11 @@ export const refreshData = onSchedule(
         timeoutSeconds: 300,
         memory: "512MiB",
         region: "us-central1",
+        secrets: ["FINNHUB_API_KEY"],
     },
     async (context) => {
         logger.info("--- (FINAL v5 - Subscription Aware) Refresh Started ---");
-        const finnhubKey = finnhubApiKeyParam.value();
+        const finnhubKey = process.env.FINNHUB_API_KEY;
         if (!finnhubKey) {
             logger.error("FINNHUB_API_KEY not found. Exiting.");
             return;
@@ -311,6 +309,170 @@ export const refreshData = onSchedule(
         }
     }
 );
+
+// PASTE THIS ENTIRE NEW FUNCTION INTO functions/src/index.ts
+
+// PASTE THIS CORRECTED VERSION OVER YOUR EXISTING SKELETON
+
+export const calculatePerformanceHistory = onSchedule(
+    {
+        schedule: "0 20 * * *", // Runs every day at 8:00 PM (20:00)
+        timeZone: "America/New_York",
+        timeoutSeconds: 540,
+        memory: "1GiB",
+        region: "us-central1",
+        secrets: ["FINNHUB_API_KEY"],
+    },
+    async (context) => {
+        // The `context` parameter is correct
+        logger.info("--- Starting Nightly Performance History Calculation ---");
+        const finnhubKey = process.env.FINNHUB_API_KEY;
+        if (!finnhubKey) {
+            logger.error(
+                "FINNHUB_API_KEY not found in calculatePerformanceHistory. Exiting."
+            );
+            return; // <-- This is a valid void return
+        }
+
+        // REPLACE THE "// CORE LOGIC" COMMENT WITH THIS BLOCK
+
+        try {
+            // 1. Get all premium users
+            const premiumUsersSnapshot = await db
+                .collection("user_summaries")
+                .where("subscriptionTier", "==", "premium")
+                .get();
+
+            if (premiumUsersSnapshot.empty) {
+                logger.info("No premium users to process. Exiting.");
+                return;
+            }
+
+            // 2. Get the benchmark data for S&P 500 (SPY) once
+            const benchmarkPrices = await getHistoricalPrices(
+                "SPY",
+                finnhubKey
+            );
+
+            // 3. Process each premium user
+            for (const userDoc of premiumUsersSnapshot.docs) {
+                const userId = userDoc.id;
+                logger.info(
+                    `Processing performance history for user: ${userId}`
+                );
+
+                const transactionsSnapshot = await db
+                    .collection("transactions")
+                    .where("userId", "==", userId)
+                    .orderBy("transactionDate")
+                    .get();
+
+                if (transactionsSnapshot.empty) {
+                    logger.warn(
+                        `User ${userId} is premium but has no transactions. Skipping.`
+                    );
+                    continue;
+                }
+
+                const transactions = transactionsSnapshot.docs.map((doc) =>
+                    doc.data()
+                );
+                const uniqueSymbols = [
+                    ...new Set(transactions.map((t) => t.symbol)),
+                ];
+
+                // 4. Fetch all necessary price histories for the user's symbols
+                const priceDataCache: {
+                    [symbol: string]: Map<string, number>;
+                } = {};
+                for (const symbol of uniqueSymbols) {
+                    priceDataCache[symbol] = await getHistoricalPrices(
+                        symbol,
+                        finnhubKey
+                    );
+                }
+
+                // 5. The Big Calculation Loop
+                const portfolioHistory: { date: string; value: number }[] = [];
+                let currentHoldings = new Map<string, number>();
+                let transactionIndex = 0;
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - 365); // Go back 365 days
+
+                for (
+                    let d = startDate;
+                    d <= new Date();
+                    d.setDate(d.getDate() + 1)
+                ) {
+                    const currentDateStr = d.toISOString().split("T")[0];
+
+                    // Update holdings based on transactions up to the current day
+                    while (
+                        transactionIndex < transactions.length &&
+                        transactions[
+                            transactionIndex
+                        ].transactionDate.toDate() <= d
+                    ) {
+                        const tx = transactions[transactionIndex];
+                        const currentQty = currentHoldings.get(tx.symbol) || 0;
+                        const newQty =
+                            tx.type === "buy"
+                                ? currentQty + tx.quantity
+                                : currentQty - tx.quantity;
+                        currentHoldings.set(tx.symbol, newQty);
+                        transactionIndex++;
+                    }
+
+                    // Calculate the total value for the current day
+                    let dailyTotalValue = 0;
+                    for (const [
+                        symbol,
+                        quantity,
+                    ] of currentHoldings.entries()) {
+                        const priceMap = priceDataCache[symbol];
+                        const price = priceMap?.get(currentDateStr);
+                        if (price && quantity > 0) {
+                            dailyTotalValue += quantity * price;
+                        }
+                    }
+                    portfolioHistory.push({
+                        date: currentDateStr,
+                        value: dailyTotalValue,
+                    });
+                }
+
+                // 6. Save the calculated history to a subcollection for the user
+                const historyRef = db.doc(
+                    `user_summaries/${userId}/performance_history/daily_summary`
+                );
+                await historyRef.set({
+                    portfolio: portfolioHistory,
+                    benchmark: Array.from(benchmarkPrices, ([date, value]) => ({
+                        date,
+                        value,
+                    })),
+                    lastCalculated:
+                        admin.firestore.FieldValue.serverTimestamp(),
+                });
+
+                logger.info(
+                    `✅ Successfully calculated and saved history for ${userId}.`
+                );
+            }
+        } catch (error) {
+            logger.error("!!! CRITICAL ERROR in calculatePerformanceHistory:", {
+                error,
+            });
+            return;
+        }
+
+        logger.info("--- Nightly Performance Calculation Complete ---");
+
+        // The fix is here: An async function that ends without a return value
+        // implicitly returns a Promise<void>, which is what Firebase wants.
+        return;
+    }
+);
 // PASTE THIS ENTIRE FUNCTION INTO functions/src/index.ts
 
 /**
@@ -527,3 +689,92 @@ export const stripeWebhook = onRequest(
         response.status(200).send({ received: true });
     }
 );
+
+// PASTE THIS HELPER FUNCTION AT THE END OF index.ts
+
+/**
+ * Fetches daily historical price data for a stock symbol for the past year.
+ * It aggressively caches the data in the `historical_prices` Firestore collection
+ * to minimize API calls to Finnhub.
+ * @param {string} symbol The stock symbol to fetch.
+ * @param {string} finnhubKey The Finnhub API key.
+ * @returns {Promise<Map<string, number>>} A map of date strings (YYYY-MM-DD) to closing prices.
+ */
+async function getHistoricalPrices(
+    symbol: string,
+    finnhubKey: string | undefined // Allow it to be undefined
+): Promise<Map<string, number>> {
+    // --- ADD THIS LOGGING BLOCK ---
+    if (!finnhubKey) {
+        logger.error(
+            `getHistoricalPrices called for ${symbol} but finnhubKey is MISSING.`
+        );
+        // Return an empty map to prevent a crash
+        return new Map();
+    }
+    // --- END LOGGING BLOCK ---
+
+    const docRef = db.collection("historical_prices").doc(symbol);
+    // ... rest of the function remains the same
+    const cachedDoc = await docRef.get();
+
+    // Check if we have a recent cache (less than 23 hours old)
+    if (cachedDoc.exists) {
+        const data = cachedDoc.data();
+        if (data && data.lastRefreshed) {
+            const lastRefreshed = data.lastRefreshed.toDate();
+            const hoursSinceRefresh =
+                (new Date().getTime() - lastRefreshed.getTime()) / 36e5;
+            if (hoursSinceRefresh < 23) {
+                logger.info(`Using cached prices for ${symbol}.`);
+                // Reconstruct the Map from the stored object
+                return new Map(Object.entries(data.prices || {}));
+            }
+        }
+    }
+
+    logger.info(`Fetching fresh prices for ${symbol} from Finnhub.`);
+
+    const to = Math.floor(Date.now() / 1000);
+    const from = to - 31536000; // 365 days in seconds
+
+    try {
+        const url = `https://finnhub.io/api/v1/stock/candle?symbol=${symbol}&resolution=D&from=${from}&to=${to}&token=${finnhubKey}`;
+        const { data } = await axios.get(url);
+
+        /* ── UNIVERSAL GUARD ───────────── */
+        if (
+            data.s !== "ok" ||
+            !Array.isArray(data.t) ||
+            !Array.isArray(data.c)
+        ) {
+            logger.warn(`Finnhub reply for ${symbol}:`, {
+                status: data.s,
+                hint: "non-fatal – skipping this symbol",
+            });
+            return new Map(); // keep the scheduler job alive
+        }
+        /* ──────────────────────────────── */
+
+        /* normal path */
+        const pricesMap = new Map<string, number>();
+        for (let i = 0; i < data.t.length; i++) {
+            const date = new Date(data.t[i] * 1000).toISOString().slice(0, 10);
+            pricesMap.set(date, data.c[i]);
+        }
+        /* …cache & return as before… */
+        // …save to Firestore cache and return pricesMap …
+        // Save the fresh data to the cache as a plain object
+        await docRef.set({
+            prices: Object.fromEntries(pricesMap),
+            lastRefreshed: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        return pricesMap;
+    } catch (error) {
+        logger.error(`Failed to fetch historical prices for ${symbol}`, {
+            error,
+        });
+        return new Map();
+    }
+}

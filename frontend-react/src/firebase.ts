@@ -2,7 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
+import { getFunctions } from "firebase/functions";
 
 // DEBUG: log env values
 console.log("FIREBASE_API_KEY:", import.meta.env.VITE_FIREBASE_API_KEY);

@@ -91,3 +91,32 @@
     color: var(--text-secondary);
     margin: 4px 0 0 0;
 }
+/* ---------- Typography tweaks ---------- */
+.totalValue {
+    font-family: var(--font-primary);
+    font-weight: 600;
+    font-size: 2.8rem; /* ⬅︎ slightly smaller than before */
+    line-height: 1.1;
+}
+
+.change {
+    font-family: var(--font-primary);
+    font-size: 1.05rem;
+}
+
+.hoyLabel {
+    opacity: 0.75;
+}
+
+/* ---------- Premium-only overrides ---------- */
+.card.premium {
+    min-height: 360px; /* taller card for chart/text */
+    padding: 2rem 2rem 1.5rem; /* more breathing room        */
+}
+
+.chartContainer.premium {
+    height: 180px; /* bigger chart inside card   */
+}
+
+/* colour helpers already exist:
+   .changePositive  /  .changeNegative  */
