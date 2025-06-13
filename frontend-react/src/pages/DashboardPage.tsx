@@ -6,7 +6,7 @@ import { doc, onSnapshot, collection, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "@/contexts/AuthContext"; // <-- Import the hook
 // Add this line with your other component imports, around line 9
-import PerformanceChart from "../components/charts/PerformanceChart";
+// import PerformanceChart from "../components/charts/PerformanceChart";
 import AddPortfolioForm from "../components/AddPortfolioForm";
 import PortfolioSummaryCard from "../components/PortfolioSummaryCard";
 import styles from "./DashboardPage.module.css";

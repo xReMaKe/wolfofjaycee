@@ -5,27 +5,25 @@ import { useParams } from "react-router-dom";
 import styles from "./StockDetailPage.module.css";
 import { getFunctions, httpsCallable } from "firebase/functions";
 
+// Cleaned up imports
 import { KeyMetrics } from "@/components/KeyMetrics";
 import { EarningsChart } from "@/components/EarningsChart";
 import { FinancialsChart } from "@/components/FinancialsChart";
 
-// --- START: UPDATED, SPECIFIC TYPE DEFINITIONS ---
+// Type definitions remain the same
 interface CompanyProfile {
     name: string;
     ticker: string;
     logo: string;
     finnhubIndustry: string;
-    [key: string]: any; // Allow for other properties
+    [key: string]: any;
 }
-
 interface Earning {
     actual: number;
     estimate: number;
     period: string;
-    [key: string]: any; // Allow for other properties
+    [key: string]: any;
 }
-
-// THIS IS THE NEW, SPECIFIC TYPE FOR FINANCIALS DATA
 interface FinnhubFinancialReport {
     period: string;
     year: number;
@@ -36,16 +34,13 @@ interface FinnhubFinancialReport {
         cf?: any[];
     };
 }
-
-// The main data structure from our cloud function
 interface FundamentalsData {
     symbol: string;
     profile: CompanyProfile;
     metrics: { [key: string]: any };
     earnings: Earning[];
-    financials: FinnhubFinancialReport[]; // <-- Using the new specific type here
+    financials: FinnhubFinancialReport[];
 }
-// --- END: UPDATED TYPE DEFINITIONS ---
 
 const StockDetailPage = () => {
     const { symbol } = useParams<{ symbol: string }>();
@@ -56,9 +51,9 @@ const StockDetailPage = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        // ... fetch logic is unchanged ...
         const fetchFundamentals = async () => {
             if (!symbol) return;
-
             setIsLoading(true);
             setError(null);
             try {
@@ -68,11 +63,9 @@ const StockDetailPage = () => {
                     FundamentalsData
                 >(functions, "getStockFundamentals");
                 const result = await getStockFundamentals({ symbol });
-
                 if (!result.data || !result.data.profile) {
                     throw new Error("Incomplete data received from API.");
                 }
-
                 setFundamentals(result.data);
             } catch (err) {
                 console.error("Error fetching stock fundamentals:", err);
@@ -83,30 +76,22 @@ const StockDetailPage = () => {
                 setIsLoading(false);
             }
         };
-
         fetchFundamentals();
     }, [symbol]);
 
-    // In frontend-react/src/pages/StockDetailPage.tsx
-
-    // ...
-    {
-        console.log("--- Data received in StockDetailPage ---", fundamentals);
-    }
     return (
         <div className={styles.pageContainer}>
             {isLoading && (
                 <div className={styles.loading}>Loading Financial Data...</div>
             )}
-
             {error && <div className={styles.error}>{error}</div>}
-
             {!isLoading && !error && fundamentals && (
                 <div className={styles.contentGrid}>
                     <KeyMetrics
                         profile={fundamentals.profile}
                         metrics={fundamentals.metrics}
                     />
+                    {/* --- This now correctly uses the newly upgraded EarningsChart --- */}
                     <EarningsChart data={fundamentals.earnings} />
                     <FinancialsChart data={fundamentals.financials} />
                 </div>

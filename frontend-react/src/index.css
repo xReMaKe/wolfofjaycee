@@ -37,6 +37,18 @@
     --border-radius-large: 24px;
     --shadow-medium: 0 10px 30px rgba(0, 0, 0, 0.2);
     --color-text-chart: #b0b8c0; /* A brighter grey, perfect for chart labels */
+    /* --- NEW, REFINED PALETTE FOR CHARTS & ACCENTS --- */
+    --chart-blue-vibrant: hsl(205, 90%, 60%); /* The "Hero" Blue */
+    --chart-magenta-accent: hsl(
+        205,
+        90%,
+        60%
+    ); /* The vibrant, "Hero" Blue from the example */
+    --chart-grey-neutral: hsl(
+        210,
+        10%,
+        35%
+    ); /* The dark, cool, "Off-White/Grey" from the example */ /* The "Accent" Purple/Magenta */
 
     /* --- ADD THESE NEW CHART & ACCENT COLORS --- */
     --color-primary: hsl(265, 85%, 70%); /* A vibrant purple for primary data */
