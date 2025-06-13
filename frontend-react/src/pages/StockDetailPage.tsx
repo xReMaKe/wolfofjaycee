@@ -4,45 +4,48 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import styles from "./StockDetailPage.module.css";
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { EarningsChart } from "@/components/EarningsChart";
-// --- Import our new component ---
-import { KeyMetrics } from "@/components/KeyMetrics";
 
-// (The interface definitions from the previous step remain the same)
+import { KeyMetrics } from "@/components/KeyMetrics";
+import { EarningsChart } from "@/components/EarningsChart";
+import { FinancialsChart } from "@/components/FinancialsChart";
+
+// --- START: UPDATED, SPECIFIC TYPE DEFINITIONS ---
 interface CompanyProfile {
-    country: string;
-    currency: string;
-    exchange: string;
     name: string;
     ticker: string;
-    ipo: string;
-    marketCapitalization: number;
-    shareOutstanding: number;
     logo: string;
-    phone: string;
-    weburl: string;
     finnhubIndustry: string;
+    [key: string]: any; // Allow for other properties
 }
-interface Financials {
-    [key: string]: any;
-}
+
 interface Earning {
     actual: number;
     estimate: number;
     period: string;
-    quarter: number;
-    surprise: number;
-    surprisePercent: number;
-    symbol: string;
-    year: number;
+    [key: string]: any; // Allow for other properties
 }
+
+// THIS IS THE NEW, SPECIFIC TYPE FOR FINANCIALS DATA
+interface FinnhubFinancialReport {
+    period: string;
+    year: number;
+    fiscalYear: number;
+    report: {
+        bs?: any[];
+        ic?: any[];
+        cf?: any[];
+    };
+}
+
+// The main data structure from our cloud function
 interface FundamentalsData {
     symbol: string;
     profile: CompanyProfile;
-    metrics: { [key: string]: any }; // Let's be a bit more flexible here
-    financials: Financials[];
+    metrics: { [key: string]: any };
     earnings: Earning[];
+    financials: FinnhubFinancialReport[]; // <-- Using the new specific type here
 }
+// --- END: UPDATED TYPE DEFINITIONS ---
 
 const StockDetailPage = () => {
     const { symbol } = useParams<{ symbol: string }>();
@@ -66,7 +69,6 @@ const StockDetailPage = () => {
                 >(functions, "getStockFundamentals");
                 const result = await getStockFundamentals({ symbol });
 
-                // Add a check to ensure we got data back
                 if (!result.data || !result.data.profile) {
                     throw new Error("Incomplete data received from API.");
                 }
@@ -85,6 +87,12 @@ const StockDetailPage = () => {
         fetchFundamentals();
     }, [symbol]);
 
+    // In frontend-react/src/pages/StockDetailPage.tsx
+
+    // ...
+    {
+        console.log("--- Data received in StockDetailPage ---", fundamentals);
+    }
     return (
         <div className={styles.pageContainer}>
             {isLoading && (
@@ -94,15 +102,13 @@ const StockDetailPage = () => {
             {error && <div className={styles.error}>{error}</div>}
 
             {!isLoading && !error && fundamentals && (
-                // --- THIS IS THE MAIN CHANGE ---
-                // We're now rendering our new component instead of just the h1
                 <div className={styles.contentGrid}>
                     <KeyMetrics
                         profile={fundamentals.profile}
                         metrics={fundamentals.metrics}
                     />
-                    {/* The other widgets will go here later */}
                     <EarningsChart data={fundamentals.earnings} />
+                    <FinancialsChart data={fundamentals.financials} />
                 </div>
             )}
         </div>

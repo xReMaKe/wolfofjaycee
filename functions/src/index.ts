@@ -473,18 +473,14 @@ export const calculatePerformanceHistory = onSchedule(
         return;
     }
 );
-// PASTE THIS ENTIRE FUNCTION INTO functions/src/index.ts
-// ==================================================================
-//  PASTE THE NEW FUNCTION HERE
-// ==================================================================
+
 export const getStockFundamentals = onCall(
     {
-        region: "us-central1", // Good practice to specify region
+        region: "us-central1",
         secrets: ["FINNHUB_API_KEY"],
-        cors: [/localhost:\d+$/, "https://financeproject-72a60.web.app"], // Allow calls from your app
+        cors: [/localhost:\d+$/, "https://financeproject-72a60.web.app"],
     },
     async (request) => {
-        // 1. Authentication and Input Validation
         if (!request.auth) {
             throw new HttpsError(
                 "unauthenticated",
@@ -501,26 +497,20 @@ export const getStockFundamentals = onCall(
         }
 
         const finnhubApiKey = process.env.FINNHUB_API_KEY;
-
         const finnhubApi = axios.create({
             baseURL: "https://finnhub.io/api/v1",
-            params: {
-                token: finnhubApiKey,
-            },
+            params: { token: finnhubApiKey },
         });
 
         logger.info(`Fetching fundamentals for ${symbol.toUpperCase()}...`);
 
         try {
-            // 2. Make API calls in parallel for efficiency
             const [
                 profileResponse,
                 metricResponse,
                 financialsResponse,
                 earningsResponse,
             ] = await Promise.all([
-                // NOTE: We get 'quote' data from refreshData, but we'll use 'profile2' here
-                // to get company name, logo, industry etc. which is more useful for this page.
                 finnhubApi.get("/stock/profile2", { params: { symbol } }),
                 finnhubApi.get("/stock/metric", {
                     params: { symbol, metric: "all" },
@@ -531,22 +521,39 @@ export const getStockFundamentals = onCall(
                 finnhubApi.get("/stock/earnings", { params: { symbol } }),
             ]);
 
-            // 3. Aggregate the data into a single, clean object
+            // --- THIS IS THE CRITICAL FIX ---
+            // We now check if financialsResponse.data.data exists.
+            // If it doesn't, we default to an EMPTY ARRAY [] instead of null.
+            const financialsData = financialsResponse.data?.data || [];
+
+            logger.info(
+                `Financials data for ${symbol} has ${financialsData.length} reports.`
+            );
+
             const fundamentals = {
                 symbol: symbol.toUpperCase(),
-                profile: profileResponse.data, // Contains name, logo, industry etc.
-                metrics: metricResponse.data.metric,
-                financials: financialsResponse.data.data,
-                earnings: earningsResponse.data,
+                profile: profileResponse.data || {},
+                metrics: metricResponse.data?.metric || {},
+                earnings: earningsResponse.data || [],
+                financials: financialsData, // Use the safe, default-to-empty-array value
             };
 
             return fundamentals;
-        } catch (error) {
-            logger.error(`Error fetching fundamentals for ${symbol}:`, error);
-            throw new HttpsError(
-                "internal",
-                `Failed to fetch fundamental data for ${symbol}.`
+        } catch (error: any) {
+            logger.error(
+                `Error fetching fundamentals for ${symbol}:`,
+                error.message
             );
+            // Even if the whole block fails, return a structure the frontend expects
+            // to prevent crashes.
+            return {
+                symbol: symbol.toUpperCase(),
+                profile: {},
+                metrics: {},
+                earnings: [],
+                financials: [], // Return empty array on catastrophic failure too
+                error: "Failed to fetch data from provider.",
+            };
         }
     }
 );
