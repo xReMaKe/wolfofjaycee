@@ -1,0 +1,26 @@
+/* frontend-react/src/pages/StockDetailPage.module.css */
+
+.pageContainer {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.loading,
+.error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50vh;
+    font-size: 1.2rem;
+    color: var(--color-text-secondary);
+}
+
+.error {
+    color: var(--color-danger);
+}
+/* In frontend-react/src/pages/StockDetailPage.module.css */
+.contentGrid {
+    display: grid;
+    gap: 2rem;
+}

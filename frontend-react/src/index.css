@@ -36,6 +36,18 @@
     --border-radius-medium: 8px;
     --border-radius-large: 24px;
     --shadow-medium: 0 10px 30px rgba(0, 0, 0, 0.2);
+    --color-text-chart: #b0b8c0; /* A brighter grey, perfect for chart labels */
+
+    /* --- ADD THESE NEW CHART & ACCENT COLORS --- */
+    --color-primary: hsl(265, 85%, 70%); /* A vibrant purple for primary data */
+    --color-accent: hsl(210, 100%, 70%); /* A nice blue for accents */
+    --color-accent-secondary: hsl(
+        200,
+        60%,
+        55%
+    ); /* A complementary teal for secondary data */
+    --color-success: hsl(140, 60%, 55%); /* For positive changes, green */
+    --color-danger: hsl(0, 70%, 65%); /* For negative changes, red */
 }
 
 /* ==========================================================================

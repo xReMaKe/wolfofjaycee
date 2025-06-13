@@ -474,7 +474,85 @@ export const calculatePerformanceHistory = onSchedule(
     }
 );
 // PASTE THIS ENTIRE FUNCTION INTO functions/src/index.ts
+// ==================================================================
+//  PASTE THE NEW FUNCTION HERE
+// ==================================================================
+export const getStockFundamentals = onCall(
+    {
+        region: "us-central1", // Good practice to specify region
+        secrets: ["FINNHUB_API_KEY"],
+        cors: [/localhost:\d+$/, "https://financeproject-72a60.web.app"], // Allow calls from your app
+    },
+    async (request) => {
+        // 1. Authentication and Input Validation
+        if (!request.auth) {
+            throw new HttpsError(
+                "unauthenticated",
+                "The function must be called while authenticated."
+            );
+        }
 
+        const symbol = request.data.symbol;
+        if (!symbol || typeof symbol !== "string") {
+            throw new HttpsError(
+                "invalid-argument",
+                "The function must be called with a 'symbol' argument."
+            );
+        }
+
+        const finnhubApiKey = process.env.FINNHUB_API_KEY;
+
+        const finnhubApi = axios.create({
+            baseURL: "https://finnhub.io/api/v1",
+            params: {
+                token: finnhubApiKey,
+            },
+        });
+
+        logger.info(`Fetching fundamentals for ${symbol.toUpperCase()}...`);
+
+        try {
+            // 2. Make API calls in parallel for efficiency
+            const [
+                profileResponse,
+                metricResponse,
+                financialsResponse,
+                earningsResponse,
+            ] = await Promise.all([
+                // NOTE: We get 'quote' data from refreshData, but we'll use 'profile2' here
+                // to get company name, logo, industry etc. which is more useful for this page.
+                finnhubApi.get("/stock/profile2", { params: { symbol } }),
+                finnhubApi.get("/stock/metric", {
+                    params: { symbol, metric: "all" },
+                }),
+                finnhubApi.get("/stock/financials-as-reported", {
+                    params: { symbol },
+                }),
+                finnhubApi.get("/stock/earnings", { params: { symbol } }),
+            ]);
+
+            // 3. Aggregate the data into a single, clean object
+            const fundamentals = {
+                symbol: symbol.toUpperCase(),
+                profile: profileResponse.data, // Contains name, logo, industry etc.
+                metrics: metricResponse.data.metric,
+                financials: financialsResponse.data.data,
+                earnings: earningsResponse.data,
+            };
+
+            return fundamentals;
+        } catch (error) {
+            logger.error(`Error fetching fundamentals for ${symbol}:`, error);
+            throw new HttpsError(
+                "internal",
+                `Failed to fetch fundamental data for ${symbol}.`
+            );
+        }
+    }
+);
+// ==================================================================
+//  END OF NEW FUNCTION
+// ==================================================================
 /**
  * A callable function that migrates a user's legacy `positions`
  * into the `transactions` collection. This is a critical one-time step

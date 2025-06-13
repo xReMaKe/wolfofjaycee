@@ -1,0 +1,85 @@
+/* frontend-react/src/components/KeyMetrics.module.css */
+
+.container {
+    background-color: var(--color-background-secondary);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 2rem;
+    border: 1px solid var(--color-border);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.identity {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: contain;
+    background-color: #fff; /* White background for logos with transparency */
+    border: 2px solid var(--color-border);
+}
+
+.nameContainer {
+    display: flex;
+    flex-direction: column;
+}
+
+.name {
+    font-size: 2rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.2;
+    color: var(--color-text-primary);
+}
+
+.ticker {
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.industry {
+    background-color: var(--color-background-tertiary);
+    color: var(--color-text-secondary);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    align-self: center;
+}
+
+.metricsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.metricItem {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.label {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+.value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}

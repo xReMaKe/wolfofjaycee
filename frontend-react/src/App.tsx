@@ -26,6 +26,7 @@ import WatchlistPage from "./pages/WatchlistPage";
 import styles from "./App.module.css";
 import { httpsCallable } from "firebase/functions";
 import { useState } from "react"; // Ensure useState is imported from react
+import StockDetailPage from "./pages/StockDetailPage";
 
 // No more Portfolio interface needed here.
 
@@ -169,6 +170,10 @@ function AppCore() {
                             <Route
                                 path="/portfolio/:portfolioId"
                                 element={<PortfolioDetailPage />}
+                            />
+                            <Route
+                                path="/stock/:symbol"
+                                element={<StockDetailPage />}
                             />
                             <Route
                                 path="*"
