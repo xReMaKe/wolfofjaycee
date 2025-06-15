@@ -24,6 +24,27 @@
         "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
         "rewrites": [
             {
+                "source": "/api/getStockFundamentals",
+                "function": "getStockFundamentals"
+            },
+            {
+                "source": "/api/createCheckoutSession",
+                "function": "createCheckoutSession"
+            },
+            {
+                "source": "/api/stripeWebhook",
+                "function": "stripeWebhook"
+            },
+            {
+                "source": "/api/createPortalSession",
+                "function": "createPortalSession"
+            },
+
+            {
+                "source": "/api/createPortalSession",
+                "function": "createPortalSession"
+            },
+            {
                 "source": "**",
                 "destination": "/index.html"
             }

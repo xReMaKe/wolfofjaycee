@@ -27,6 +27,7 @@ import styles from "./App.module.css";
 import { httpsCallable } from "firebase/functions";
 import { useState } from "react"; // Ensure useState is imported from react
 import StockDetailPage from "./pages/StockDetailPage";
+import SettingsPage from "./pages/SettingsPage";
 
 // No more Portfolio interface needed here.
 
@@ -139,12 +140,18 @@ function AppCore() {
                                 </button>
                             )}
 
-                            <button
-                                onClick={handleLogout}
-                                className={styles.logoutButton}
-                            >
-                                Cerrar Sesión
-                            </button>
+                            <div className={styles.userActions}>
+                                <NavLink to="/settings">
+                                    Configuración{" "}
+                                    {/* <-- Correct Spanish term */}
+                                </NavLink>
+                                <button
+                                    onClick={handleLogout}
+                                    className={styles.logoutButton}
+                                >
+                                    Cerrar Sesión
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -174,6 +181,10 @@ function AppCore() {
                             <Route
                                 path="/stock/:symbol"
                                 element={<StockDetailPage />}
+                            />
+                            <Route
+                                path="/settings"
+                                element={<SettingsPage />}
                             />
                             <Route
                                 path="*"

@@ -8,6 +8,7 @@ import axios from "axios";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { onRequest } from "firebase-functions/v2/https";
 import Stripe from "stripe";
+
 // Initialize Admin SDK once
 if (admin.apps.length === 0) {
     admin.initializeApp();
@@ -478,9 +479,16 @@ export const getStockFundamentals = onCall(
     {
         region: "us-central1",
         secrets: ["FINNHUB_API_KEY"],
-        cors: [/localhost:\d+$/, "https://financeproject-72a60.web.app"],
+        timeoutSeconds: 120, // Give it more time for API calls
+        // Ensure this cors config matches your working setup
+        cors: [
+            /localhost:\d+$/,
+            "https://financeproject-72a60.web.app",
+            "https://wolfofjaycee.com",
+        ],
     },
     async (request) => {
+        // 1. Authentication and Input Validation
         if (!request.auth) {
             throw new HttpsError(
                 "unauthenticated",
@@ -488,23 +496,42 @@ export const getStockFundamentals = onCall(
             );
         }
 
-        const symbol = request.data.symbol;
+        const symbol = request.data.symbol?.toUpperCase();
         if (!symbol || typeof symbol !== "string") {
             throw new HttpsError(
                 "invalid-argument",
-                "The function must be called with a 'symbol' argument."
+                "The function must be called with a 'symbol' string."
             );
         }
 
-        const finnhubApiKey = process.env.FINNHUB_API_KEY;
-        const finnhubApi = axios.create({
-            baseURL: "https://finnhub.io/api/v1",
-            params: { token: finnhubApiKey },
-        });
-
-        logger.info(`Fetching fundamentals for ${symbol.toUpperCase()}...`);
+        logger.info(`Fetching fundamentals for ${symbol} via onCall...`);
 
         try {
+            // Your caching logic is already here and it's good. We keep it.
+            const cacheRef = db.collection("company_fundamentals").doc(symbol);
+            const cachedDoc = await cacheRef.get();
+            if (cachedDoc.exists) {
+                const data = cachedDoc.data();
+                if (data && data.lastUpdated) {
+                    const lastUpdated = data.lastUpdated.toDate();
+                    const hoursSinceUpdate =
+                        (new Date().getTime() - lastUpdated.getTime()) / 36e5;
+                    if (hoursSinceUpdate < 24) {
+                        logger.info(
+                            `✅ [CACHE HIT] Returning cached data for ${symbol}.`
+                        );
+                        return data.fundamentals;
+                    }
+                }
+            }
+
+            // 2. Make API calls in parallel
+            const finnhubApiKey = process.env.FINNHUB_API_KEY;
+            const finnhubApi = axios.create({
+                baseURL: "https://finnhub.io/api/v1",
+                params: { token: finnhubApiKey },
+            });
+
             const [
                 profileResponse,
                 metricResponse,
@@ -521,22 +548,20 @@ export const getStockFundamentals = onCall(
                 finnhubApi.get("/stock/earnings", { params: { symbol } }),
             ]);
 
-            // --- THIS IS THE CRITICAL FIX ---
-            // We now check if financialsResponse.data.data exists.
-            // If it doesn't, we default to an EMPTY ARRAY [] instead of null.
-            const financialsData = financialsResponse.data?.data || [];
-
-            logger.info(
-                `Financials data for ${symbol} has ${financialsData.length} reports.`
-            );
-
+            // 3. Aggregate the data into a single, clean object
             const fundamentals = {
-                symbol: symbol.toUpperCase(),
+                symbol: symbol,
                 profile: profileResponse.data || {},
                 metrics: metricResponse.data?.metric || {},
+                financials: financialsResponse.data?.data || [],
                 earnings: earningsResponse.data || [],
-                financials: financialsData, // Use the safe, default-to-empty-array value
             };
+
+            // 4. Write to cache and return
+            await cacheRef.set({
+                fundamentals,
+                lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+            });
 
             return fundamentals;
         } catch (error: any) {
@@ -544,16 +569,21 @@ export const getStockFundamentals = onCall(
                 `Error fetching fundamentals for ${symbol}:`,
                 error.message
             );
-            // Even if the whole block fails, return a structure the frontend expects
-            // to prevent crashes.
-            return {
-                symbol: symbol.toUpperCase(),
-                profile: {},
-                metrics: {},
-                earnings: [],
-                financials: [], // Return empty array on catastrophic failure too
-                error: "Failed to fetch data from provider.",
-            };
+            // Attempt to serve stale cache on error
+            const doc = await db
+                .collection("company_fundamentals")
+                .doc(symbol)
+                .get();
+            if (doc.exists) {
+                logger.warn(
+                    `[FAILOVER] Returning stale cache for ${symbol} due to API error.`
+                );
+                return doc.data()?.fundamentals;
+            }
+            throw new HttpsError(
+                "internal",
+                `Failed to fetch fundamental data for ${symbol}.`
+            );
         }
     }
 );
@@ -863,3 +893,76 @@ async function getHistoricalPrices(
         return new Map();
     }
 }
+// IN: functions/src/index.ts
+// PASTE THIS NEW FUNCTION AT THE END OF THE FILE
+
+// IN: functions/src/index.ts
+// Replace your existing createPortalSession function with this one.
+
+export const createPortalSession = onCall(
+    {
+        secrets: ["STRIPE_SECRET_KEY"],
+        region: "us-central1",
+        cors: [
+            /localhost:\d+$/,
+            "https://financeproject-72a60.web.app",
+            "https://wolfofjaycee.com",
+        ],
+    },
+    async (request) => {
+        if (!request.auth) {
+            throw new HttpsError(
+                "unauthenticated",
+                "You must be logged in to manage your billing."
+            );
+        }
+        const userId = request.auth.uid;
+        const stripeClient = getStripeClient();
+
+        logger.info(`Creating portal session for user: ${userId}`);
+
+        const userSummaryRef = db.collection("user_summaries").doc(userId);
+        const userDoc = await userSummaryRef.get();
+        const stripeCustomerId = userDoc.data()?.stripeCustomerId;
+
+        if (!stripeCustomerId) {
+            logger.error(
+                `User ${userId} tried to manage billing but has no stripeCustomerId.`
+            );
+            throw new HttpsError(
+                "failed-precondition",
+                "No billing account found for this user."
+            );
+        }
+
+        // --- THIS IS THE KEY CHANGE ---
+        // We no longer provide a return_url here. Stripe will use the one
+        // we just configured in the dashboard.
+
+        try {
+            const portalSession =
+                await stripeClient.billingPortal.sessions.create({
+                    customer: stripeCustomerId,
+                    // The 'return_url' parameter is now removed.
+                });
+
+            if (!portalSession.url) {
+                throw new HttpsError(
+                    "internal",
+                    "Could not create a portal session."
+                );
+            }
+
+            return { url: portalSession.url };
+        } catch (err: any) {
+            logger.error("Stripe portal session error", {
+                userId: userId,
+                message: err.message,
+            });
+            throw new HttpsError(
+                "internal",
+                "Failed to create billing portal session."
+            );
+        }
+    }
+);

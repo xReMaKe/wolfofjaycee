@@ -241,3 +241,22 @@
     background-color: #0088ff; /* A slightly lighter blue */
     transform: translateY(-1px);
 }
+/* In App.module.css */
+.userActions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem; /* Puts some space between Settings and Logout */
+}
+
+/* Style the new settings link like the other nav links */
+.userActions a {
+    text-decoration: none;
+    color: var(--color-text-secondary);
+    transition: color 0.2s ease;
+    padding: 5px 0;
+    position: relative;
+}
+
+.userActions a:hover {
+    color: var(--color-text-primary);
+}
